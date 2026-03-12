@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "build-registry": "npx tsx build-registry.ts",
+    "validate": "npx tsx validate-skills.ts"
+  }
+}

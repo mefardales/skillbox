@@ -1,0 +1,77 @@
+{
+  "name": "skillbox-vscode",
+  "displayName": "Skillbox",
+  "description": "Skill Pack for your development environment — browse, install, and manage AI coding skills",
+  "version": "0.1.0",
+  "publisher": "skillbox",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other", "Machine Learning"],
+  "keywords": ["ai", "skills", "claude", "cursor", "codex", "agent-skills"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "icon": "media/icon.png",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "skillbox",
+          "title": "Skillbox",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "skillbox": [
+        {
+          "type": "webview",
+          "id": "skillbox.search",
+          "name": "Search Skills"
+        },
+        { "id": "skillbox.recommended", "name": "Recommended for You" },
+        { "id": "skillbox.available", "name": "Available Skills" },
+        { "id": "skillbox.installed", "name": "Installed Skills" }
+      ]
+    },
+    "commands": [
+      { "command": "skillbox.install", "title": "Install Skill", "icon": "$(cloud-download)" },
+      { "command": "skillbox.remove", "title": "Remove Skill", "icon": "$(trash)" },
+      { "command": "skillbox.refresh", "title": "Refresh Skills", "icon": "$(refresh)" },
+      { "command": "skillbox.preview", "title": "Preview Skill", "icon": "$(eye)" },
+      { "command": "skillbox.search", "title": "Search Skills", "icon": "$(search)" },
+      { "command": "skillbox.detect", "title": "Detect AI Tools" },
+      { "command": "skillbox.installProject", "title": "Install to Project", "icon": "$(folder)" },
+      { "command": "skillbox.refreshRecommended", "title": "Rescan Workspace", "icon": "$(refresh)" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "skillbox.refresh", "when": "view == skillbox.available", "group": "navigation" },
+        { "command": "skillbox.search", "when": "view == skillbox.available", "group": "navigation" },
+        { "command": "skillbox.refreshRecommended", "when": "view == skillbox.recommended", "group": "navigation" }
+      ],
+      "view/item/context": [
+        { "command": "skillbox.install", "when": "viewItem == skill", "group": "inline" },
+        { "command": "skillbox.preview", "when": "viewItem == skill" },
+        { "command": "skillbox.installProject", "when": "viewItem == skill" },
+        { "command": "skillbox.remove", "when": "viewItem == installedSkill", "group": "inline" },
+        { "command": "skillbox.preview", "when": "viewItem == installedSkill" }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "package": "vsce package",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.14.0",
+    "@types/node-fetch": "^2.6.11",
+    "esbuild": "^0.21.0",
+    "typescript": "^5.5.2",
+    "@vscode/vsce": "^2.26.0"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
+}

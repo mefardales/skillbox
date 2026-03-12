@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentation — Skillbox</title>
+  <meta name="description" content="Documentation for Skillbox: how skills work, the Agent Skills standard, install paths, compatible tools, and the SKILL.md format specification." />
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%237f3bff'/><rect x='8' y='8' width='16' height='16' rx='2' fill='none' stroke='white' stroke-width='2'/><rect x='11' y='11' width='10' height='4' rx='1' fill='white'/></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────────────────── -->
+<nav class="nav" id="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand" aria-label="Skillbox home">
+      <div class="nav-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      </div>
+      <span class="nav-name">Skillbox</span>
+    </a>
+
+    <div class="nav-links" role="list">
+      <a href="index.html"      class="nav-link" role="listitem">Home</a>
+      <a href="skills.html"     class="nav-link" role="listitem">Skills</a>
+      <a href="install.html"    class="nav-link" role="listitem">Install</a>
+      <a href="docs.html"       class="nav-link" role="listitem">Docs</a>
+      <a href="contribute.html" class="nav-link" role="listitem">Contribute</a>
+    </div>
+
+    <div class="nav-actions">
+      <a href="https://github.com/skillbox/skillbox" class="nav-github" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        GitHub
+      </a>
+      <button class="nav-menu-btn" id="menuBtn" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="nav-mobile" id="mobileNav" role="dialog" aria-label="Mobile navigation">
+  <a href="index.html"      class="nav-mobile-link">Home</a>
+  <a href="skills.html"     class="nav-mobile-link">Skills</a>
+  <a href="install.html"    class="nav-mobile-link">Install</a>
+  <a href="docs.html"       class="nav-mobile-link">Docs</a>
+  <a href="contribute.html" class="nav-mobile-link">Contribute</a>
+  <a href="https://github.com/skillbox/skillbox" class="nav-mobile-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+</div>
+
+<!-- ── Page Hero ─────────────────────────────────────────────── -->
+<div class="page-hero">
+  <div class="container page-hero-inner">
+    <div class="page-hero-eyebrow">
+      <div class="page-hero-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <nav class="page-hero-breadcrumb" aria-label="Breadcrumb">
+        <a href="index.html">Home</a> / Documentation
+      </nav>
+    </div>
+    <h1 class="page-hero-title">Documentation</h1>
+    <p class="page-hero-subtitle">
+      How skills work, where they install, compatible tools, and the
+      SKILL.md format specification.
+    </p>
+  </div>
+</div>
+
+<!-- ── Doc Layout ────────────────────────────────────────────── -->
+<main>
+  <div class="container">
+    <div class="doc-layout">
+
+      <!-- Sidebar nav -->
+      <aside class="doc-sidebar" aria-label="Documentation navigation">
+        <div class="doc-sidebar-title">On this page</div>
+        <nav>
+          <a href="#how-skills-work"  class="doc-nav-link active">How Skills Work</a>
+          <a href="#install-paths"    class="doc-nav-link">Install Paths</a>
+          <a href="#compatible-tools" class="doc-nav-link">Compatible Tools</a>
+          <a href="#skill-format"     class="doc-nav-link">Skill Format</a>
+          <a href="#agent-skills"     class="doc-nav-link">Agent Skills Standard</a>
+        </nav>
+      </aside>
+
+      <!-- Content -->
+      <article class="prose">
+
+        <!-- ── How Skills Work ─────────────────────────────────── -->
+        <section id="how-skills-work" aria-labelledby="h-how">
+          <h2 id="h-how">How Skills Work</h2>
+
+          <p>
+            A <strong>skill</strong> is a Markdown file that contains expert-level instructions,
+            patterns, and examples for a specific technology. When installed, the AI coding tool
+            loads the skill file and uses its contents to inform every response it generates.
+          </p>
+
+          <p>
+            Skills are not documentation — they are written specifically for AI coding assistants.
+            Instead of explaining concepts, they tell the AI exactly how to structure code,
+            which patterns to prefer, and which anti-patterns to avoid.
+          </p>
+
+          <div class="note-box">
+            <svg class="note-box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div class="note-box-content">
+              Skills are plain Markdown files with YAML frontmatter. They are human-readable,
+              version-controlled, and composable. You can install multiple skills for a single project.
+            </div>
+          </div>
+
+          <h3>Lifecycle of a Skill</h3>
+          <p>Here is what happens when you run <code>npx skillbox install frontend/react-components</code>:</p>
+
+          <ol>
+            <li>Skillbox fetches the skill from the registry (or your local registry).</li>
+            <li>It scans your home directory for known AI tool directories.</li>
+            <li>The <code>SKILL.md</code> file is written to each tool's skills folder.</li>
+            <li>On the AI tool's next startup, the skill is automatically loaded into context.</li>
+            <li>The AI assistant uses the skill's instructions when generating code.</li>
+          </ol>
+
+          <h3>Global vs. Project Skills</h3>
+          <p>
+            By default, skills install globally to <code>~/.&lt;tool&gt;/skills/</code> and apply
+            to all projects. Use the <code>--project</code> flag to install locally to
+            <code>./.&lt;tool&gt;/skills/</code> in your current working directory. Project-level
+            skills take precedence over global ones.
+          </p>
+
+          <div class="code-block" style="margin-top:16px;">
+            <div class="code-block-header">
+              <span class="code-block-label">Global vs. project install</span>
+              <button class="code-copy-btn" data-copy="# Global (default) — applies to all projects
+npx skillbox install frontend/react-components
+
+# Project-local — only for this project
+npx skillbox install frontend/react-components --project" aria-label="Copy commands">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy
+              </button>
+            </div>
+            <pre><code><span class="code-comment"># Global (default) — applies to all projects</span>
+<span class="code-cmd">npx skillbox install</span> <span class="code-arg">frontend/react-components</span>
+
+<span class="code-comment"># Project-local — only for this project</span>
+<span class="code-cmd">npx skillbox install</span> <span class="code-arg">frontend/react-components</span> <span class="code-flag">--project</span></code></pre>
+          </div>
+        </section>
+
+        <!-- ── Install Paths ───────────────────────────────────── -->
+        <section id="install-paths" aria-labelledby="h-paths">
+          <h2 id="h-paths">Install Paths</h2>
+
+          <p>
+            Skillbox installs skills to the standard path for each AI tool.
+            These paths are defined by the Agent Skills specification and are recognized
+            automatically by all compatible tools.
+          </p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tool</th>
+                <th>Global path</th>
+                <th>Project path</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Claude Code</td>
+                <td>~/.claude/skills/</td>
+                <td>./.claude/skills/</td>
+              </tr>
+              <tr>
+                <td>Cursor</td>
+                <td>~/.cursor/skills/</td>
+                <td>./.cursor/skills/</td>
+              </tr>
+              <tr>
+                <td>Codex (OpenAI)</td>
+                <td>~/.codex/skills/</td>
+                <td>./.codex/skills/</td>
+              </tr>
+              <tr>
+                <td>Windsurf</td>
+                <td>~/.windsurf/skills/</td>
+                <td>./.windsurf/skills/</td>
+              </tr>
+              <tr>
+                <td>Aider</td>
+                <td>~/.aider/skills/</td>
+                <td>./.aider/skills/</td>
+              </tr>
+              <tr>
+                <td>Continue.dev</td>
+                <td>~/.continue/skills/</td>
+                <td>./.continue/skills/</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="note-box tip">
+            <svg class="note-box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            <div class="note-box-content">
+              Run <code>npx skillbox detect</code> to see exactly which tools are installed
+              on your system and confirm the paths that will be used.
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Compatible Tools ───────────────────────────────── -->
+        <section id="compatible-tools" aria-labelledby="h-tools">
+          <h2 id="h-tools">Compatible Tools</h2>
+
+          <p>
+            Skillbox works with any AI coding tool that supports the Agent Skills open standard.
+            The standard defines a simple directory convention — any tool that reads a
+            <code>skills/</code> directory from the tool's config folder will work.
+          </p>
+
+          <h3>Officially Supported</h3>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <strong>Claude Code</strong> — Anthropic's official CLI assistant
+            </div>
+            <div class="feature-item">
+              <div class="feature-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <strong>Cursor</strong> — AI-first code editor
+            </div>
+            <div class="feature-item">
+              <div class="feature-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <strong>Codex</strong> — OpenAI's coding model CLI
+            </div>
+            <div class="feature-item">
+              <div class="feature-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <strong>Windsurf</strong> — Codeium's AI editor
+            </div>
+            <div class="feature-item">
+              <div class="feature-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <strong>Aider</strong> — AI pair programming in the terminal
+            </div>
+            <div class="feature-item">
+              <div class="feature-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <strong>Continue.dev</strong> — Open-source AI code assistant for VS Code / JetBrains
+            </div>
+          </div>
+
+          <p style="margin-top:16px;">
+            See the full list on the <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer">Agent Skills website</a>.
+            30+ tools are compatible with the standard.
+          </p>
+        </section>
+
+        <!-- ── Skill Format ────────────────────────────────────── -->
+        <section id="skill-format" aria-labelledby="h-format">
+          <h2 id="h-format">Skill Format (SKILL.md)</h2>
+
+          <p>
+            Every skill is a single Markdown file named <code>SKILL.md</code>. It contains
+            a YAML frontmatter block followed by the skill content in Markdown.
+          </p>
+
+          <h3>Frontmatter Fields</h3>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>name</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>Unique skill identifier (kebab-case, matches directory name)</td>
+              </tr>
+              <tr>
+                <td>description</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>One-sentence description of what the skill teaches the AI</td>
+              </tr>
+              <tr>
+                <td>category</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>One of: backend, data, devops, frontend, general, testing</td>
+              </tr>
+              <tr>
+                <td>tags</td>
+                <td>string[]</td>
+                <td>Yes</td>
+                <td>3–8 searchable keywords (lowercase, no spaces)</td>
+              </tr>
+              <tr>
+                <td>version</td>
+                <td>string</td>
+                <td>No</td>
+                <td>Semantic version of the skill (e.g. 1.0.0). Defaults to 1.0.0.</td>
+              </tr>
+              <tr>
+                <td>authors</td>
+                <td>string[]</td>
+                <td>No</td>
+                <td>GitHub usernames of skill authors</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Example SKILL.md</h3>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-block-label">skills/frontend/react-components/SKILL.md</span>
+              <button class="code-copy-btn" data-copy="---
+name: react-components
+description: React component best practices with hooks, TypeScript, and modern patterns.
+category: frontend
+tags: [react, typescript, hooks, components, frontend]
+version: 1.2.0
+authors: [your-github-username]
+---
+
+# React Component Best Practices
+
+## Component Structure
+
+Always prefer functional components with hooks over class components...
+
+## Naming Conventions
+
+- Components: PascalCase (e.g. UserProfile)
+- Hooks: camelCase prefixed with 'use' (e.g. useUserProfile)
+- Props interfaces: ComponentNameProps (e.g. UserProfileProps)" aria-label="Copy example SKILL.md">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy
+              </button>
+            </div>
+            <pre><code><span class="code-comment">---</span>
+<span class="code-keyword">name</span>: <span class="code-value">react-components</span>
+<span class="code-keyword">description</span>: <span class="code-string">React component best practices with hooks, TypeScript, and modern patterns.</span>
+<span class="code-keyword">category</span>: <span class="code-value">frontend</span>
+<span class="code-keyword">tags</span>: [<span class="code-string">react, typescript, hooks, components, frontend</span>]
+<span class="code-keyword">version</span>: <span class="code-value">1.2.0</span>
+<span class="code-keyword">authors</span>: [<span class="code-string">your-github-username</span>]
+<span class="code-comment">---</span>
+
+<span class="code-comment"># React Component Best Practices</span>
+
+<span class="code-comment">## Component Structure</span>
+
+Always prefer functional components with hooks over class components...
+
+<span class="code-comment">## Naming Conventions</span>
+
+- Components: PascalCase (e.g. UserProfile)
+- Hooks: camelCase prefixed with 'use' (e.g. useUserProfile)
+- Props interfaces: ComponentNameProps (e.g. UserProfileProps)</code></pre>
+          </div>
+
+          <h3>Content Guidelines</h3>
+          <p>The Markdown body should contain actionable instructions — not just information:</p>
+
+          <ul>
+            <li>Write instructions, not explanations. Tell the AI what to do, not what a concept means.</li>
+            <li>Use concrete code examples for every pattern you describe.</li>
+            <li>Specify what to prefer and what to avoid explicitly.</li>
+            <li>Keep the skill focused on one technology — do not try to cover everything.</li>
+            <li>Assume the AI already knows the basics — focus on expert-level patterns.</li>
+          </ul>
+        </section>
+
+        <!-- ── Agent Skills Standard ───────────────────────────── -->
+        <section id="agent-skills" aria-labelledby="h-standard">
+          <h2 id="h-standard">Agent Skills Standard</h2>
+
+          <p>
+            Skillbox is built on the <strong>Agent Skills open standard</strong> — a simple,
+            tool-agnostic convention for distributing reusable AI instructions.
+          </p>
+
+          <p>
+            The standard defines:
+          </p>
+
+          <ul>
+            <li>The directory structure where skills are stored (<code>~/.&lt;tool&gt;/skills/</code>)</li>
+            <li>The <code>SKILL.md</code> file format with YAML frontmatter</li>
+            <li>How tools should discover and load skills at startup</li>
+            <li>Registry API conventions for skill distribution</li>
+          </ul>
+
+          <div class="note-box tip">
+            <svg class="note-box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            <div class="note-box-content">
+              By following the open standard, any skill you create in Skillbox will automatically
+              work in all 30+ compatible tools — no per-tool integration needed.
+            </div>
+          </div>
+
+          <p>
+            Read the full specification at
+            <a href="https://agentskills.io/spec" target="_blank" rel="noopener noreferrer">agentskills.io/spec</a>
+            or visit the <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer">Agent Skills website</a>.
+          </p>
+        </section>
+
+      </article>
+    </div>
+  </div>
+</main>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="footer-logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <span class="footer-logo-text">Skillbox</span>
+        </div>
+        <p class="footer-tagline">A curated registry of AI coding skills. Install expert instructions with one command.</p>
+        <div class="footer-badge">MIT License</div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Pages</div>
+        <div class="footer-links">
+          <a href="index.html"      class="footer-link">Home</a>
+          <a href="skills.html"     class="footer-link">Skills Browser</a>
+          <a href="install.html"    class="footer-link">Installation</a>
+          <a href="docs.html"       class="footer-link">Documentation</a>
+          <a href="contribute.html" class="footer-link">Contribute</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Resources</div>
+        <div class="footer-links">
+          <a href="https://github.com/skillbox/skillbox" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub</a>
+          <a href="https://www.npmjs.com/package/skillbox" target="_blank" rel="noopener noreferrer" class="footer-link">npm package</a>
+          <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer" class="footer-link">Agent Skills</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Standards</div>
+        <div class="footer-links">
+          <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer" class="footer-link">Agent Skills</a>
+          <a href="https://agentskills.io/spec" target="_blank" rel="noopener noreferrer" class="footer-link">Specification</a>
+          <a href="https://github.com/skillbox/skillbox/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="footer-link">License</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">Built with care for the developer community.</div>
+      <div class="footer-standard">
+        Built with the <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer">Agent Skills open standard</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
+  <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg">Copied to clipboard!</span>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

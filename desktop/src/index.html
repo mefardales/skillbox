@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src https://api.github.com;">
+  <title>Skillbox</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../node_modules/xterm/css/xterm.css">
+  <script src="../node_modules/xterm/lib/xterm.js"></script>
+  <script src="../node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+</head>
+<body>
+
+  <div class="app-shell">
+
+    <!-- ─── Activity Bar (VS Code style) ─── -->
+    <aside class="activity-bar" id="sidebar">
+      <div class="activity-bar-logo" title="Skillbox">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+          <rect width="24" height="24" rx="6" fill="#7c3aed"/>
+          <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" fill="#fff"/>
+          <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" fill="#fff" opacity="0.6"/>
+          <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" fill="#fff" opacity="0.6"/>
+          <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" fill="#fff" opacity="0.3"/>
+        </svg>
+      </div>
+
+      <nav class="activity-bar-nav">
+        <button class="activity-bar-item active" data-view="dashboard" title="Workspace">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+          </svg>
+        </button>
+        <button class="activity-bar-item" data-panel="projects" title="Projects">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+          </svg>
+          <span class="activity-bar-badge" id="navProjectCount" style="display:none">0</span>
+        </button>
+        <button class="activity-bar-item" data-view="tasks" title="Tasks">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+          </svg>
+          <span class="activity-bar-badge" id="navTaskCount" style="display:none">0</span>
+        </button>
+        <button class="activity-bar-item" data-view="teams" title="Teams">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.97 5.97 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.97 5.97 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+          </svg>
+        </button>
+        <div class="activity-bar-separator"></div>
+        <button class="activity-bar-item" data-view="skills" title="Skills">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z"/>
+          </svg>
+        </button>
+        <button class="activity-bar-item" data-view="github" title="GitHub">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.605-.015 2.895-.015 3.3 0 .267.18.578.688.48C17.138 18.163 20 14.418 20 10c0-5.523-4.477-10-10-10z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        <button class="activity-bar-item" data-view="history" title="History">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </nav>
+
+      <div class="activity-bar-bottom">
+        <button class="activity-bar-item" id="btnToggleTerminal" title="Terminal (Ctrl+`)">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        <button class="activity-bar-item" id="btnToggleRightPanel" title="Toggle Panel">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm1 0v12h8V4H4zm10 0v12h2V4h-2z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        <button class="activity-bar-item" id="btnAddProject" title="Add Project">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ─── Project Sidebar (Codex-style threads) ─── -->
+    <aside class="project-sidebar" id="projectSidebar">
+      <div class="psb-header">
+        <span class="psb-title">Projects</span>
+        <button class="btn-icon" id="btnAddProjectSidebar" title="Add Project">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+      <div class="psb-search">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12" class="psb-search-icon"><path fill-rule="evenodd" d="M6 2a4 4 0 100 8 4 4 0 000-8zM0 6a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 010 6z" clip-rule="evenodd"/></svg>
+        <input type="text" id="projectSidebarSearch" placeholder="Filter projects..." autocomplete="off" spellcheck="false">
+      </div>
+      <div class="psb-list" id="projectSidebarList">
+        <div class="psb-empty">No projects yet</div>
+      </div>
+    </aside>
+
+    <!-- ─── Main Workspace ─── -->
+    <div class="main-area">
+      <main class="main-content" id="mainContent">
+        <div class="main-titlebar"></div>
+
+        <!-- ─── VIEW: Dashboard ─── -->
+        <div class="view" id="viewDashboard">
+          <div class="view-header">
+            <div class="view-header-left">
+              <h1 class="view-title">Workspace</h1>
+              <span class="view-subtitle" id="dashboardSubtitle"></span>
+            </div>
+          </div>
+          <div class="dashboard-grid">
+            <div class="dash-stats" id="dashStats">
+              <div class="dash-stat-card">
+                <div class="dash-stat-info">
+                  <span class="dash-stat-value" id="dashProjectCount">0</span>
+                  <span class="dash-stat-label">Projects</span>
+                </div>
+              </div>
+              <div class="dash-stat-card">
+                <div class="dash-stat-info">
+                  <span class="dash-stat-value" id="dashTaskCount">0</span>
+                  <span class="dash-stat-label">Open Tasks</span>
+                </div>
+              </div>
+              <div class="dash-stat-card">
+                <div class="dash-stat-info">
+                  <span class="dash-stat-value" id="dashTeamCount">0</span>
+                  <span class="dash-stat-label">Team Members</span>
+                </div>
+              </div>
+              <div class="dash-stat-card">
+                <div class="dash-stat-info">
+                  <span class="dash-stat-value" id="dashSkillCount">0</span>
+                  <span class="dash-stat-label">Active Skills</span>
+                </div>
+              </div>
+            </div>
+            <div class="dash-columns">
+              <div class="dash-column-main">
+                <div class="dash-card">
+                  <div class="dash-card-header">
+                    <h3>Recent Projects</h3>
+                    <button class="btn-ghost btn-sm" id="dashBtnAddProject">+ Add</button>
+                  </div>
+                  <div class="dash-card-body" id="dashRecentProjects">
+                    <div class="dash-empty"><p>No projects yet. Add a project folder to get started.</p></div>
+                  </div>
+                </div>
+                <div class="dash-card">
+                  <div class="dash-card-header">
+                    <h3>Open Tasks</h3>
+                    <button class="btn-ghost btn-sm" id="dashBtnViewTasks">View All</button>
+                  </div>
+                  <div class="dash-card-body" id="dashOpenTasks">
+                    <div class="dash-empty"><p>No open tasks.</p></div>
+                  </div>
+                </div>
+              </div>
+              <div class="dash-column-side">
+                <div class="dash-card dash-card-full">
+                  <div class="dash-card-header"><h3>Activity</h3></div>
+                  <div class="dash-card-body dash-activity-feed" id="dashActivityFeed">
+                    <div class="dash-empty"><p>No recent activity</p></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── VIEW: Projects ─── -->
+        <div class="view" id="viewProjects" style="display:none">
+          <div class="view-header">
+            <div class="view-header-left">
+              <h1 class="view-title">Projects</h1>
+              <span class="view-subtitle" id="projectsSubtitle">Manage your project folders</span>
+            </div>
+            <div class="view-header-right">
+              <button class="btn-primary" id="btnAddProjectMain">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                Add Project
+              </button>
+            </div>
+          </div>
+          <div class="projects-list" id="projectsList">
+            <div class="project-empty-state" id="projectsEmpty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+              </svg>
+              <p>No projects added yet</p>
+              <button class="btn-primary" id="btnAddProjectEmpty">Add your first project</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── VIEW: Tasks (Kanban) ─── -->
+        <div class="view" id="viewTasks" style="display:none">
+          <div class="view-header">
+            <div class="view-header-left">
+              <h1 class="view-title">Tasks</h1>
+              <span class="view-subtitle" id="tasksSubtitle">Plan and track your work</span>
+            </div>
+            <div class="view-header-right">
+              <select class="select-input" id="taskProjectFilter">
+                <option value="">All projects</option>
+              </select>
+              <button class="btn-primary" id="btnCreateTask">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                New Task
+              </button>
+            </div>
+          </div>
+          <div class="kanban-board" id="kanbanBoard">
+            <div class="kanban-column" data-status="todo">
+              <div class="kanban-column-header">
+                <span class="kanban-column-dot" style="background:#94a3b8"></span>
+                <span class="kanban-column-title">To Do</span>
+                <span class="kanban-column-count" id="countTodo">0</span>
+              </div>
+              <div class="kanban-column-body" id="kanbanTodo"></div>
+            </div>
+            <div class="kanban-column" data-status="in_progress">
+              <div class="kanban-column-header">
+                <span class="kanban-column-dot" style="background:#3b82f6"></span>
+                <span class="kanban-column-title">In Progress</span>
+                <span class="kanban-column-count" id="countInProgress">0</span>
+              </div>
+              <div class="kanban-column-body" id="kanbanInProgress"></div>
+            </div>
+            <div class="kanban-column" data-status="review">
+              <div class="kanban-column-header">
+                <span class="kanban-column-dot" style="background:#f59e0b"></span>
+                <span class="kanban-column-title">In Review</span>
+                <span class="kanban-column-count" id="countReview">0</span>
+              </div>
+              <div class="kanban-column-body" id="kanbanReview"></div>
+            </div>
+            <div class="kanban-column" data-status="done">
+              <div class="kanban-column-header">
+                <span class="kanban-column-dot" style="background:#22c55e"></span>
+                <span class="kanban-column-title">Done</span>
+                <span class="kanban-column-count" id="countDone">0</span>
+              </div>
+              <div class="kanban-column-body" id="kanbanDone"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── VIEW: Teams ─── -->
+        <div class="view" id="viewTeams" style="display:none">
+          <div class="view-header">
+            <div class="view-header-left">
+              <h1 class="view-title">Teams</h1>
+              <span class="view-subtitle" id="teamsSubtitle">Your collaborators and roles</span>
+            </div>
+            <div class="view-header-right">
+              <button class="btn-primary" id="btnCreateTeam">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                New Team
+              </button>
+            </div>
+          </div>
+          <div class="teams-list" id="teamsList">
+            <div class="teams-empty-state" id="teamsEmpty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
+              </svg>
+              <p>No teams yet</p>
+              <span class="empty-hint">Create teams to organize your collaborators</span>
+              <button class="btn-primary" id="btnCreateTeamEmpty">Create your first team</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── VIEW: Skills ─── -->
+        <div class="view" id="viewSkills" style="display:none">
+          <div class="view-header">
+            <div class="view-header-left">
+              <h1 class="view-title">Skills</h1>
+              <span class="view-subtitle" id="skillsSubtitle">0 skills in 0 categories</span>
+            </div>
+            <div class="view-header-right">
+              <button class="btn-ghost btn-sm" id="btnImportGitSkill">
+                <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                Import from Git
+              </button>
+              <button class="btn-primary btn-sm" id="btnCreateSkill">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                New Skill
+              </button>
+              <div class="search-wrap">
+                <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                </svg>
+                <input type="text" id="skillSearch" class="search-input" placeholder="Search skills..." autocomplete="off" spellcheck="false">
+              </div>
+            </div>
+          </div>
+          <div class="category-pills" id="categoryPills"></div>
+          <div class="skills-grid" id="skillsGrid"></div>
+          <div class="empty-state" id="skillsEmpty" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <p>No skills match your search</p>
+            <button class="btn-ghost" onclick="clearSearch()">Clear search</button>
+          </div>
+        </div>
+
+        <!-- ─── VIEW: GitHub ─── -->
+        <div class="view" id="viewGithub" style="display:none">
+          <div class="view-header">
+            <div class="view-header-left">
+              <h1 class="view-title">GitHub</h1>
+              <span class="view-subtitle">Connect and manage repositories</span>
+            </div>
+          </div>
+          <div class="github-connect-card" id="githubConnectCard">
+            <div class="github-connect-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            </div>
+            <h3>Connect to GitHub</h3>
+            <p class="github-connect-desc">Link your GitHub account to browse repos, clone projects, and import skills.</p>
+            <div class="github-token-form">
+              <input type="password" class="form-input" id="githubTokenInput" placeholder="Paste your GitHub Personal Access Token">
+              <button class="btn-primary" id="btnGithubConnect">Connect</button>
+            </div>
+            <p class="github-token-hint">Generate a token at GitHub Settings > Developer settings > Personal access tokens</p>
+          </div>
+          <div class="github-connected" id="githubConnected" style="display:none">
+            <div class="github-profile-card">
+              <img class="github-avatar" id="githubAvatar" src="" alt="">
+              <div class="github-profile-info">
+                <span class="github-username" id="githubUsername"></span>
+                <span class="github-status-text">Connected</span>
+              </div>
+              <button class="btn-ghost btn-sm btn-danger" id="btnGithubDisconnect">Disconnect</button>
+            </div>
+            <div class="github-repos-section">
+              <div class="view-header" style="margin-top:20px">
+                <div class="view-header-left">
+                  <h2 style="font-size:16px;font-weight:700">Repositories</h2>
+                </div>
+                <div class="view-header-right">
+                  <div class="search-wrap">
+                    <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                    </svg>
+                    <input type="text" id="githubRepoSearch" class="search-input" placeholder="Search repositories..." autocomplete="off">
+                  </div>
+                </div>
+              </div>
+              <div class="github-repos-list" id="githubReposList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── VIEW: History ─── -->
+        <div class="view" id="viewHistory" style="display:none">
+          <div class="view-header">
+            <div class="view-header-left">
+              <h1 class="view-title">History</h1>
+              <span class="view-subtitle" id="historySubtitle">Timeline of all project activity</span>
+            </div>
+            <div class="view-header-right">
+              <select class="select-input" id="historyFilter">
+                <option value="">All projects</option>
+              </select>
+            </div>
+          </div>
+          <div class="history-timeline" id="historyTimeline">
+            <div class="history-empty" id="historyEmpty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <p>No history yet</p>
+              <span class="empty-hint">Activity will appear here as you work</span>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- ─── Bottom Terminal Panel ─── -->
+      <div class="terminal-panel" id="terminalPanel" style="display:none">
+        <div class="terminal-resize-handle" id="terminalResizeHandle"></div>
+        <div class="terminal-panel-header" id="terminalPanelHeader">
+          <div class="terminal-tabs" id="terminalTabs"></div>
+          <div class="terminal-toolbar-actions">
+            <button class="btn-ghost btn-xs" id="btnNewTerminal" title="New terminal">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+            </button>
+            <button class="btn-ghost btn-xs" id="btnDuplicateTerminal" title="Duplicate">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z"/><path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z"/></svg>
+            </button>
+            <button class="btn-ghost btn-xs btn-danger" id="btnKillTerminal" title="Kill">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            </button>
+            <div class="terminal-panel-divider"></div>
+            <button class="btn-ghost btn-xs" id="btnMaximizeTerminal" title="Maximize">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 111.414 1.414L5.414 15H7a1 1 0 110 2H3a1 1 0 01-1-1v-4zm13.707 4.707a1 1 0 010-1.414L15.414 13H14a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0v-1.586l-2.293 2.293a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+            </button>
+            <button class="btn-ghost btn-xs" id="btnCloseTerminalPanel" title="Close panel">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" transform="rotate(180 10 10)"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="terminal-container" id="terminalContainer"></div>
+      </div>
+    </div><!-- /main-area -->
+
+    <!-- ─── Right Info Panel ─── -->
+    <aside class="right-panel" id="rightPanel">
+      <div class="rp-tabs">
+        <button class="rp-tab active" data-rp-tab="tasks">Tasks</button>
+        <button class="rp-tab" data-rp-tab="activity">Activity</button>
+        <button class="rp-tab" data-rp-tab="info">Info</button>
+      </div>
+
+      <!-- Tasks tab -->
+      <div class="rp-tab-content active" id="rpTasks">
+        <div class="rp-section-header">
+          <span>Open Tasks</span>
+          <button class="btn-icon" id="rpBtnNewTask" title="New Task">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+        <div class="rp-task-list" id="rpTaskList">
+          <div class="rp-empty">No open tasks</div>
+        </div>
+      </div>
+
+      <!-- Activity tab -->
+      <div class="rp-tab-content" id="rpActivity">
+        <div class="rp-section-header"><span>Recent Activity</span></div>
+        <div class="rp-activity-list" id="rpActivityList">
+          <div class="rp-empty">No recent activity</div>
+        </div>
+      </div>
+
+      <!-- Info tab -->
+      <div class="rp-tab-content" id="rpInfo">
+        <div class="rp-section-header"><span>Project Info</span></div>
+        <div class="rp-info-content" id="rpInfoContent">
+          <div class="rp-empty">Select a project to see details</div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ═══════ Skill Detail Panel ═══════ -->
+  <div class="detail-overlay" id="detailOverlay"></div>
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header" id="detailHeader"></div>
+    <div class="detail-body" id="detailBody"></div>
+  </div>
+
+  <!-- ═══════ Env Modal ═══════ -->
+  <div class="modal-overlay" id="envModalOverlay" style="display:none">
+    <div class="modal" id="envModal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 class="modal-title">Environments</h2>
+          <span class="modal-subtitle" id="envModalProject"></span>
+        </div>
+        <button class="modal-close" id="btnCloseEnvModal">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+      <div class="env-tabs" id="envTabs"></div>
+      <div class="modal-body" id="envModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="btnAddEnvVar">+ Add variable</button>
+        <div class="modal-footer-right">
+          <button class="btn-ghost" id="btnImportEnv">Import .env</button>
+          <button class="btn-primary" id="btnSyncEnv">Sync to .env</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ Team Modal ═══════ -->
+  <div class="modal-overlay" id="teamModalOverlay" style="display:none">
+    <div class="modal modal-lg" id="teamModal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 class="modal-title" id="teamModalTitle">New Team</h2>
+        </div>
+        <button class="modal-close" id="btnCloseTeamModal">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="teamModalBody">
+        <div class="form-group">
+          <label class="form-label">Team Name</label>
+          <input type="text" class="form-input" id="teamNameInput" placeholder="e.g. Frontend Squad">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-input" id="teamDescInput" placeholder="What this team specializes in...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Members</label>
+          <div class="team-members-list" id="teamMembersList"></div>
+          <button class="btn-ghost" id="btnAddMember">+ Add member</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="btnCancelTeam">Cancel</button>
+        <button class="btn-primary" id="btnSaveTeam">Save Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ Task Modal ═══════ -->
+  <div class="modal-overlay" id="taskModalOverlay" style="display:none">
+    <div class="modal" id="taskModal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 class="modal-title" id="taskModalTitle">New Task</h2>
+        </div>
+        <button class="modal-close" id="btnCloseTaskModal">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-input" id="taskTitleInput" placeholder="What needs to be done?">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="taskDescInput" rows="4" placeholder="Add details, context, or requirements..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Project</label>
+            <select class="form-input" id="taskProjectInput"></select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Priority</label>
+            <select class="form-input" id="taskPriorityInput">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Status</label>
+            <select class="form-input" id="taskStatusInput">
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="review">In Review</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Assignee</label>
+            <input type="text" class="form-input" id="taskAssigneeInput" placeholder="Name or @handle">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="btnCancelTask">Cancel</button>
+        <button class="btn-primary" id="btnSaveTask">Save Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ Skill Creator Modal ═══════ -->
+  <div class="modal-overlay" id="skillModalOverlay" style="display:none">
+    <div class="modal modal-lg" id="skillModal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 class="modal-title" id="skillModalTitle">New Skill</h2>
+        </div>
+        <button class="modal-close" id="btnCloseSkillModal">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Skill Name</label>
+          <input type="text" class="form-input" id="skillNameInput" placeholder="e.g. API Error Handling">
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Category</label>
+            <select class="form-input" id="skillCategoryInput">
+              <option value="frontend">Frontend</option>
+              <option value="backend">Backend</option>
+              <option value="data">Data</option>
+              <option value="devops">DevOps</option>
+              <option value="testing">Testing</option>
+              <option value="security">Security</option>
+              <option value="general" selected>General</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Version</label>
+            <input type="text" class="form-input" id="skillVersionInput" placeholder="1.0" value="1.0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-input" id="skillDescInput" placeholder="What this skill does...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags (comma-separated)</label>
+          <input type="text" class="form-input" id="skillTagsInput" placeholder="api, error-handling, best-practices">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Content (Markdown)</label>
+          <textarea class="form-textarea" id="skillContentInput" rows="12" placeholder="# My Skill&#10;&#10;Write skill directives in Markdown..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="btnCancelSkill">Cancel</button>
+        <button class="btn-primary" id="btnSaveSkill">Save Skill</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ Git Import Modal ═══════ -->
+  <div class="modal-overlay" id="gitImportModalOverlay" style="display:none">
+    <div class="modal" id="gitImportModal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 class="modal-title">Import Skills from Git</h2>
+          <span class="modal-subtitle">Clone a repository and import SKILL.md files</span>
+        </div>
+        <button class="modal-close" id="btnCloseGitImportModal">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Git Repository URL</label>
+          <input type="text" class="form-input" id="gitRepoUrlInput" placeholder="https://github.com/user/skills-repo.git">
+        </div>
+        <div id="gitImportStatus" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="btnCancelGitImport">Cancel</button>
+        <button class="btn-primary" id="btnStartGitImport">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ Toast ═══════ -->
+  <div class="toast" id="toast"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

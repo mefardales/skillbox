@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contribute — Skillbox</title>
+  <meta name="description" content="Learn how to create and contribute skills to Skillbox. Step-by-step guide, writing guidelines, quality standards, and how to submit a pull request." />
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%237f3bff'/><rect x='8' y='8' width='16' height='16' rx='2' fill='none' stroke='white' stroke-width='2'/><rect x='11' y='11' width='10' height='4' rx='1' fill='white'/></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    .quality-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .quality-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+
+    .quality-card-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(127,59,255,0.12);
+      border: 1px solid rgba(127,59,255,0.2);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .quality-card-icon svg { width: 18px; height: 18px; color: var(--color-primary-light); }
+    .quality-card-title { font-size: 14px; font-weight: 700; color: var(--color-white); margin-bottom: 6px; }
+    .quality-card-desc  { font-size: 13px; color: var(--color-text-muted); line-height: 1.6; }
+
+    .pr-cta {
+      background: linear-gradient(135deg, rgba(127,59,255,0.12) 0%, rgba(60,7,163,0.08) 100%);
+      border: 1px solid rgba(127,59,255,0.25);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      text-align: center;
+      margin-top: 48px;
+    }
+
+    .pr-cta-title { font-size: 24px; font-weight: 800; color: var(--color-white); letter-spacing: -0.02em; margin-bottom: 12px; }
+    .pr-cta-desc  { font-size: 15px; color: var(--color-text-muted); margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.65; }
+    .pr-cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    @media (max-width: 600px) {
+      .quality-grid { grid-template-columns: 1fr; }
+      .pr-cta { padding: 28px 20px; }
+      .pr-cta-actions { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────────────────── -->
+<nav class="nav" id="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand" aria-label="Skillbox home">
+      <div class="nav-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      </div>
+      <span class="nav-name">Skillbox</span>
+    </a>
+
+    <div class="nav-links" role="list">
+      <a href="index.html"      class="nav-link" role="listitem">Home</a>
+      <a href="skills.html"     class="nav-link" role="listitem">Skills</a>
+      <a href="install.html"    class="nav-link" role="listitem">Install</a>
+      <a href="docs.html"       class="nav-link" role="listitem">Docs</a>
+      <a href="contribute.html" class="nav-link" role="listitem">Contribute</a>
+    </div>
+
+    <div class="nav-actions">
+      <a href="https://github.com/skillbox/skillbox" class="nav-github" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        GitHub
+      </a>
+      <button class="nav-menu-btn" id="menuBtn" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="nav-mobile" id="mobileNav" role="dialog" aria-label="Mobile navigation">
+  <a href="index.html"      class="nav-mobile-link">Home</a>
+  <a href="skills.html"     class="nav-mobile-link">Skills</a>
+  <a href="install.html"    class="nav-mobile-link">Install</a>
+  <a href="docs.html"       class="nav-mobile-link">Docs</a>
+  <a href="contribute.html" class="nav-mobile-link">Contribute</a>
+  <a href="https://github.com/skillbox/skillbox" class="nav-mobile-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+</div>
+
+<!-- ── Page Hero ─────────────────────────────────────────────── -->
+<div class="page-hero">
+  <div class="container page-hero-inner">
+    <div class="page-hero-eyebrow">
+      <div class="page-hero-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <nav class="page-hero-breadcrumb" aria-label="Breadcrumb">
+        <a href="index.html">Home</a> / Contribute
+      </nav>
+    </div>
+    <h1 class="page-hero-title">Contribute a Skill</h1>
+    <p class="page-hero-subtitle">
+      Have deep expertise in a technology? Share it with thousands of developers.
+      Skills are Markdown files — simple to write, high impact to contribute.
+    </p>
+  </div>
+</div>
+
+<!-- ── Doc Layout ────────────────────────────────────────────── -->
+<main>
+  <div class="container">
+    <div class="doc-layout">
+
+      <!-- Sidebar -->
+      <aside class="doc-sidebar" aria-label="Contributing guide navigation">
+        <div class="doc-sidebar-title">On this page</div>
+        <nav>
+          <a href="#create-a-skill"    class="doc-nav-link active">Create a Skill</a>
+          <a href="#writing-guide"     class="doc-nav-link">Writing Guide</a>
+          <a href="#quality-standards" class="doc-nav-link">Quality Standards</a>
+          <a href="#submit-pr"         class="doc-nav-link">Submit a PR</a>
+        </nav>
+      </aside>
+
+      <!-- Content -->
+      <article class="prose">
+
+        <!-- ── Create a Skill ─────────────────────────────────── -->
+        <section id="create-a-skill" aria-labelledby="h-create">
+          <h2 id="h-create">Create a Skill</h2>
+
+          <p>
+            Creating a skill takes about 30–60 minutes. The entire skill is a single
+            <code>SKILL.md</code> Markdown file. Here is the full process from start to finish.
+          </p>
+
+          <div class="step-list" style="margin-top:24px;">
+
+            <div class="step-item">
+              <div class="step-marker">
+                <div class="step-num" aria-hidden="true">1</div>
+              </div>
+              <div class="step-body">
+                <div class="step-title">Fork and clone the repository</div>
+                <div class="step-content">
+                  <p>Start by forking the Skillbox repo on GitHub and cloning your fork locally.</p>
+                  <div class="code-block" style="margin-top:12px;">
+                    <div class="code-block-header">
+                      <span class="code-block-label">Clone your fork</span>
+                      <button class="code-copy-btn" data-copy="git clone https://github.com/YOUR_USERNAME/skillbox.git
+cd skillbox
+npm install" aria-label="Copy commands">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code><span class="code-cmd">git clone</span> <span class="code-string">https://github.com/YOUR_USERNAME/skillbox.git</span>
+<span class="code-cmd">cd</span> skillbox
+<span class="code-cmd">npm install</span></code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-marker">
+                <div class="step-num" aria-hidden="true">2</div>
+              </div>
+              <div class="step-body">
+                <div class="step-title">Create the skill directory</div>
+                <div class="step-content">
+                  <p>Create a new directory under <code>skills/&lt;category&gt;/&lt;skill-name&gt;/</code>. The skill name must be in kebab-case and match an appropriate category.</p>
+                  <div class="code-block" style="margin-top:12px;">
+                    <div class="code-block-header">
+                      <span class="code-block-label">Directory structure</span>
+                      <button class="code-copy-btn" data-copy="mkdir -p skills/backend/my-new-skill
+touch skills/backend/my-new-skill/SKILL.md" aria-label="Copy commands">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code><span class="code-cmd">mkdir -p</span> <span class="code-arg">skills/backend/my-new-skill</span>
+<span class="code-cmd">touch</span> <span class="code-arg">skills/backend/my-new-skill/SKILL.md</span></code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-marker">
+                <div class="step-num" aria-hidden="true">3</div>
+              </div>
+              <div class="step-body">
+                <div class="step-title">Write the SKILL.md file</div>
+                <div class="step-content">
+                  <p>Open <code>SKILL.md</code> and add the YAML frontmatter followed by your skill content. See the <a href="docs.html#skill-format">Skill Format docs</a> for the required fields.</p>
+                  <div class="code-block" style="margin-top:12px;">
+                    <div class="code-block-header">
+                      <span class="code-block-label">SKILL.md template</span>
+                      <button class="code-copy-btn" data-copy="---
+name: my-new-skill
+description: A concise one-sentence description of what this skill teaches the AI.
+category: backend
+tags: [tag1, tag2, tag3, tag4]
+version: 1.0.0
+authors: [your-github-username]
+---
+
+# My New Skill
+
+## When to Use This Skill
+
+Describe the scenarios where this skill applies.
+
+## Core Patterns
+
+### Pattern Name
+
+Explain the pattern with a code example:
+
+\`\`\`typescript
+// Example code here
+\`\`\`
+
+## What to Avoid
+
+- Anti-pattern 1 — why it is problematic
+- Anti-pattern 2 — what to do instead" aria-label="Copy SKILL.md template">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code><span class="code-comment">---</span>
+<span class="code-keyword">name</span>: <span class="code-value">my-new-skill</span>
+<span class="code-keyword">description</span>: <span class="code-string">A concise one-sentence description of what this skill teaches the AI.</span>
+<span class="code-keyword">category</span>: <span class="code-value">backend</span>
+<span class="code-keyword">tags</span>: [<span class="code-string">tag1, tag2, tag3, tag4</span>]
+<span class="code-keyword">version</span>: <span class="code-value">1.0.0</span>
+<span class="code-keyword">authors</span>: [<span class="code-string">your-github-username</span>]
+<span class="code-comment">---</span>
+
+<span class="code-comment"># My New Skill</span>
+
+<span class="code-comment">## When to Use This Skill</span>
+
+Describe the scenarios where this skill applies.
+
+<span class="code-comment">## Core Patterns</span>
+
+<span class="code-comment">### Pattern Name</span>
+
+Explain the pattern with a code example.
+
+<span class="code-comment">## What to Avoid</span>
+
+- Anti-pattern 1 — why it is problematic
+- Anti-pattern 2 — what to do instead</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-marker">
+                <div class="step-num" aria-hidden="true">4</div>
+              </div>
+              <div class="step-body">
+                <div class="step-title">Run the validator</div>
+                <div class="step-content">
+                  <p>Skillbox includes a validation script that checks your skill for required fields, format issues, and common mistakes.</p>
+                  <div class="code-block" style="margin-top:12px;">
+                    <div class="code-block-header">
+                      <span class="code-block-label">Validate your skill</span>
+                      <button class="code-copy-btn" data-copy="npx tsx scripts/validate-skills.ts" aria-label="Copy command">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code><span class="code-cmd">npx tsx</span> <span class="code-arg">scripts/validate-skills.ts</span></code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-marker">
+                <div class="step-num" aria-hidden="true">5</div>
+              </div>
+              <div class="step-body">
+                <div class="step-title">Open a pull request</div>
+                <div class="step-content">
+                  <p>Push your branch and open a pull request against <code>main</code>. The PR template will guide you through the review checklist.</p>
+                  <div class="code-block" style="margin-top:12px;">
+                    <div class="code-block-header">
+                      <span class="code-block-label">Push and open PR</span>
+                      <button class="code-copy-btn" data-copy="git checkout -b skill/my-new-skill
+git add skills/backend/my-new-skill/SKILL.md
+git commit -m 'feat: add my-new-skill to backend category'
+git push origin skill/my-new-skill" aria-label="Copy commands">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        Copy
+                      </button>
+                    </div>
+                    <pre><code><span class="code-cmd">git checkout -b</span> <span class="code-arg">skill/my-new-skill</span>
+<span class="code-cmd">git add</span> <span class="code-arg">skills/backend/my-new-skill/SKILL.md</span>
+<span class="code-cmd">git commit -m</span> <span class="code-string">'feat: add my-new-skill to backend category'</span>
+<span class="code-cmd">git push origin</span> <span class="code-arg">skill/my-new-skill</span></code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ── Writing Guide ───────────────────────────────────── -->
+        <section id="writing-guide" aria-labelledby="h-writing">
+          <h2 id="h-writing">Writing Guide</h2>
+
+          <p>
+            The most common mistake when writing a skill is treating it like documentation.
+            Skills are <strong>instructions for an AI</strong>, not a learning resource for humans.
+            Keep this distinction in mind throughout.
+          </p>
+
+          <h3>Write Instructions, Not Explanations</h3>
+          <p>
+            The AI already knows what React is. Do not explain React — tell the AI how
+            <em>you</em> want React code written in your organization or for this project.
+          </p>
+
+          <div class="code-block" style="margin-top:12px;">
+            <div class="code-block-header">
+              <span class="code-block-label">Good vs. poor skill content</span>
+            </div>
+            <pre><code><span class="code-comment"># Poor — explains concepts (the AI already knows this)</span>
+React hooks are functions that let you use state and lifecycle
+features in functional components. useState returns an array...
+
+<span class="code-comment"># Good — tells the AI what to do</span>
+Always use the useCallback hook for event handlers passed to
+child components to prevent unnecessary re-renders. Prefer
+useMemo only when measuring an actual performance problem.</code></pre>
+          </div>
+
+          <h3>Include Concrete Code Examples</h3>
+          <p>Every pattern should have a working code example. The AI learns from examples more than prose descriptions.</p>
+
+          <h3>Be Explicit About Preferences</h3>
+          <p>Do not hedge. Say "always use X" and "never use Y" rather than "consider using X" or "Y might cause problems". Specific directives produce better results.</p>
+
+          <h3>Keep Skills Focused</h3>
+          <p>A skill for "react-components" should cover React component patterns only — not TypeScript, testing, or state management. Those warrant their own skills. Focused skills are easier to maintain and more composable.</p>
+
+          <h3>Recommended Sections</h3>
+          <ul>
+            <li>When to use this skill (context/trigger)</li>
+            <li>Core patterns (with code examples)</li>
+            <li>Naming conventions</li>
+            <li>Error handling patterns</li>
+            <li>What to avoid (anti-patterns with explanations)</li>
+            <li>Project structure (if applicable)</li>
+          </ul>
+        </section>
+
+        <!-- ── Quality Standards ───────────────────────────────── -->
+        <section id="quality-standards" aria-labelledby="h-quality">
+          <h2 id="h-quality">Quality Standards</h2>
+
+          <p>Skills are reviewed before merging. Here is what the review looks for:</p>
+
+          <div class="quality-grid">
+            <div class="quality-card">
+              <div class="quality-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="quality-card-title">Accurate frontmatter</div>
+              <div class="quality-card-desc">All required fields present, category is valid, tags are relevant and lowercase.</div>
+            </div>
+
+            <div class="quality-card">
+              <div class="quality-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div class="quality-card-title">Code examples work</div>
+              <div class="quality-card-desc">All code examples are syntactically valid and follow the patterns described in the skill.</div>
+            </div>
+
+            <div class="quality-card">
+              <div class="quality-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              </div>
+              <div class="quality-card-title">Clear and actionable</div>
+              <div class="quality-card-desc">Instructions are specific and directive. Avoids vague guidance like "consider" or "might".</div>
+            </div>
+
+            <div class="quality-card">
+              <div class="quality-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </div>
+              <div class="quality-card-title">No overlap with existing skills</div>
+              <div class="quality-card-desc">The skill covers a unique technology or a meaningfully different aspect not covered by existing skills.</div>
+            </div>
+
+            <div class="quality-card">
+              <div class="quality-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11M9 14H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-4"/></svg>
+              </div>
+              <div class="quality-card-title">Passes validation</div>
+              <div class="quality-card-desc">Runs clean through <code>npx tsx scripts/validate-skills.ts</code> with no errors or warnings.</div>
+            </div>
+
+            <div class="quality-card">
+              <div class="quality-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+              <div class="quality-card-title">Expert-level content</div>
+              <div class="quality-card-desc">Goes beyond beginner patterns. Covers edge cases, performance considerations, and production-ready approaches.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Submit a PR ─────────────────────────────────────── -->
+        <section id="submit-pr" aria-labelledby="h-pr">
+          <h2 id="h-pr">Submit a Pull Request</h2>
+
+          <p>When your skill is ready, submit a pull request against the <code>main</code> branch of the Skillbox repository.</p>
+
+          <h3>PR Title Format</h3>
+          <p>Use the format: <code>feat: add &lt;skill-name&gt; skill to &lt;category&gt; category</code></p>
+
+          <h3>PR Description Checklist</h3>
+          <p>Your PR description should confirm:</p>
+          <ul>
+            <li>The skill passes <code>npx tsx scripts/validate-skills.ts</code> with no errors</li>
+            <li>The frontmatter is complete with accurate tags and category</li>
+            <li>All code examples in the skill are syntactically correct</li>
+            <li>The skill does not significantly overlap with an existing skill</li>
+            <li>You have personally used this technology in production</li>
+          </ul>
+
+          <h3>Review Process</h3>
+          <p>Maintainers will review your PR within a few days. They may request changes to improve clarity, accuracy, or scope. Once approved, the skill is merged and immediately available to install.</p>
+
+          <div class="note-box">
+            <svg class="note-box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div class="note-box-content">
+              First-time contributors: the repo has a <code>CONTRIBUTING.md</code> file
+              with additional setup instructions and development workflow details.
+            </div>
+          </div>
+
+          <div class="pr-cta">
+            <div class="pr-cta-title">Ready to contribute?</div>
+            <div class="pr-cta-desc">
+              Open the GitHub repository to fork it, read the full CONTRIBUTING.md,
+              and submit your first skill.
+            </div>
+            <div class="pr-cta-actions">
+              <a href="https://github.com/skillbox/skillbox" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                Open GitHub Repo
+              </a>
+              <a href="https://github.com/skillbox/skillbox/blob/main/CONTRIBUTING.md" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+                Read CONTRIBUTING.md
+              </a>
+            </div>
+          </div>
+        </section>
+
+      </article>
+    </div>
+  </div>
+</main>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="footer-logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <span class="footer-logo-text">Skillbox</span>
+        </div>
+        <p class="footer-tagline">A curated registry of AI coding skills. Install expert instructions with one command.</p>
+        <div class="footer-badge">MIT License</div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Pages</div>
+        <div class="footer-links">
+          <a href="index.html"      class="footer-link">Home</a>
+          <a href="skills.html"     class="footer-link">Skills Browser</a>
+          <a href="install.html"    class="footer-link">Installation</a>
+          <a href="docs.html"       class="footer-link">Documentation</a>
+          <a href="contribute.html" class="footer-link">Contribute</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Resources</div>
+        <div class="footer-links">
+          <a href="https://github.com/skillbox/skillbox" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub</a>
+          <a href="https://www.npmjs.com/package/skillbox" target="_blank" rel="noopener noreferrer" class="footer-link">npm package</a>
+          <a href="https://github.com/skillbox/skillbox/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer" class="footer-link">CONTRIBUTING.md</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Standards</div>
+        <div class="footer-links">
+          <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer" class="footer-link">Agent Skills</a>
+          <a href="https://agentskills.io/spec" target="_blank" rel="noopener noreferrer" class="footer-link">Specification</a>
+          <a href="https://github.com/skillbox/skillbox/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="footer-link">License</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">Built with care for the developer community.</div>
+      <div class="footer-standard">
+        Built with the <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer">Agent Skills open standard</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
+  <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg">Copied to clipboard!</span>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

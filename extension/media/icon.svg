@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <defs>
+    <linearGradient id="sb" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7f3bff"/>
+      <stop offset="100%" stop-color="#3c07a3"/>
+    </linearGradient>
+  </defs>
+  <!-- Box body -->
+  <rect x="2" y="10" width="20" height="12" rx="2.5" ry="2.5" fill="url(#sb)"/>
+  <!-- Box lid arch -->
+  <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="url(#sb)" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <!-- Handle -->
+  <path d="M9 10h6" stroke="#7f3bff" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <!-- Lightning bolt -->
+  <path d="M13.5 13.5 11 17h2.5L10.5 22 14 18h-2.5z" fill="#ffffff" opacity="0.95"/>
+</svg>

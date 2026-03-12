@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation — Skillbox</title>
+  <meta name="description" content="Install Skillbox via npm or npx. Full CLI command reference, VSCode/Cursor extension setup, and environment configuration." />
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%237f3bff'/><rect x='8' y='8' width='16' height='16' rx='2' fill='none' stroke='white' stroke-width='2'/><rect x='11' y='11' width='10' height='4' rx='1' fill='white'/></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    .install-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-top: 40px;
+    }
+
+    .install-block {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .install-block-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface-2);
+    }
+
+    .install-block-icon {
+      width: 32px;
+      height: 32px;
+      background: rgba(127,59,255,0.12);
+      border: 1px solid rgba(127,59,255,0.2);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .install-block-icon svg { width: 16px; height: 16px; color: var(--color-primary-light); }
+
+    .install-block-title { font-size: 15px; font-weight: 600; color: var(--color-white); }
+
+    .install-block-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .install-step-list { display: flex; flex-direction: column; gap: 16px; }
+
+    .install-step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .install-step-num {
+      width: 28px;
+      height: 28px;
+      background: rgba(127,59,255,0.15);
+      border: 1px solid rgba(127,59,255,0.25);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-primary-light);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .install-step-label { font-size: 14px; font-weight: 600; color: var(--color-white); margin-bottom: 5px; }
+    .install-step-desc  { font-size: 13px; color: var(--color-text-muted); line-height: 1.6; }
+
+    .install-paths-box {
+      padding: 16px;
+      background: rgba(127,59,255,0.06);
+      border: 1px solid rgba(127,59,255,0.12);
+      border-radius: var(--radius-md);
+    }
+
+    .install-paths-title { font-size: 12px; font-weight: 600; color: var(--color-white); margin-bottom: 10px; }
+
+    .install-paths-list {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--color-text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .install-path-row { display: flex; gap: 8px; align-items: baseline; }
+    .install-path-tool { color: var(--color-text-faint); min-width: 100px; }
+    .install-path-val  { color: var(--color-primary-light); }
+
+    /* Command reference */
+    .cmd-ref-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 40px;
+    }
+
+    .cmd-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: border-color var(--transition);
+    }
+
+    .cmd-card:hover { border-color: var(--color-border-hover); }
+
+    .cmd-card-name {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: #c084fc;
+      margin-bottom: 8px;
+    }
+
+    .cmd-card-desc {
+      font-size: 13px;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .cmd-card-example {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--color-text-faint);
+      background: rgba(0,0,0,0.3);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+    }
+
+    .env-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+    }
+
+    .env-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-faint);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .env-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: top;
+    }
+
+    .env-table td:first-child { font-family: var(--font-mono); font-size: 13px; color: var(--color-primary-light); }
+    .env-table td:nth-child(2) { font-size: 13px; color: var(--color-text-muted); line-height: 1.6; }
+    .env-table td:last-child { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-faint); }
+    .env-table tr:last-child td { border-bottom: none; }
+    .env-table tr:hover td { background: rgba(255,255,255,0.025); }
+
+    @media (max-width: 768px) {
+      .install-grid { grid-template-columns: 1fr; }
+      .env-table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────────────────── -->
+<nav class="nav" id="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand" aria-label="Skillbox home">
+      <div class="nav-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      </div>
+      <span class="nav-name">Skillbox</span>
+    </a>
+
+    <div class="nav-links" role="list">
+      <a href="index.html"      class="nav-link" role="listitem">Home</a>
+      <a href="skills.html"     class="nav-link" role="listitem">Skills</a>
+      <a href="install.html"    class="nav-link" role="listitem">Install</a>
+      <a href="docs.html"       class="nav-link" role="listitem">Docs</a>
+      <a href="contribute.html" class="nav-link" role="listitem">Contribute</a>
+    </div>
+
+    <div class="nav-actions">
+      <a href="https://github.com/skillbox/skillbox" class="nav-github" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        GitHub
+      </a>
+      <button class="nav-menu-btn" id="menuBtn" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="nav-mobile" id="mobileNav" role="dialog" aria-label="Mobile navigation">
+  <a href="index.html"      class="nav-mobile-link">Home</a>
+  <a href="skills.html"     class="nav-mobile-link">Skills</a>
+  <a href="install.html"    class="nav-mobile-link">Install</a>
+  <a href="docs.html"       class="nav-mobile-link">Docs</a>
+  <a href="contribute.html" class="nav-mobile-link">Contribute</a>
+  <a href="https://github.com/skillbox/skillbox" class="nav-mobile-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+</div>
+
+<!-- ── Page Hero ─────────────────────────────────────────────── -->
+<div class="page-hero">
+  <div class="container page-hero-inner">
+    <div class="page-hero-eyebrow">
+      <div class="page-hero-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v13M5 9l7 7 7-7"/><path d="M5 20h14"/></svg>
+      </div>
+      <nav class="page-hero-breadcrumb" aria-label="Breadcrumb">
+        <a href="index.html">Home</a> / Installation
+      </nav>
+    </div>
+    <h1 class="page-hero-title">Installation Guide</h1>
+    <p class="page-hero-subtitle">
+      Get up and running in seconds. No configuration required — Skillbox
+      detects your AI tools and installs skills to the right location automatically.
+    </p>
+  </div>
+</div>
+
+<main>
+  <!-- ── Quick Start ─────────────────────────────────────────── -->
+  <section class="section" id="quick-start" aria-labelledby="quickstart-heading" style="background:var(--color-dark-950);">
+    <div class="container">
+      <div class="section-label">Quick Start</div>
+      <h2 class="section-title" id="quickstart-heading">Start in seconds</h2>
+      <p class="section-subtitle">No global install required. Run skills with <code>npx</code>, or install globally with <code>npm</code>.</p>
+
+      <div class="install-grid reveal">
+        <!-- CLI Column -->
+        <div class="install-block">
+          <div class="install-block-header">
+            <div class="install-block-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            </div>
+            <span class="install-block-title">CLI — npx (no install needed)</span>
+          </div>
+          <div class="install-block-body">
+            <div class="code-block">
+              <div class="code-block-header">
+                <span class="code-block-label">Install a skill immediately</span>
+                <button class="code-copy-btn" data-copy="npx skillbox install frontend/react-components" aria-label="Copy command">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  Copy
+                </button>
+              </div>
+              <pre><code><span class="code-comment"># No install needed — runs directly with npx</span>
+<span class="code-cmd">npx skillbox install</span> <span class="code-arg">frontend/react-components</span></code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block-header">
+                <span class="code-block-label">Or install globally</span>
+                <button class="code-copy-btn" data-copy="npm install -g skillbox" aria-label="Copy command">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  Copy
+                </button>
+              </div>
+              <pre><code><span class="code-comment"># Install globally so you can run `skillbox` anywhere</span>
+<span class="code-cmd">npm install -g</span> <span class="code-arg">skillbox</span>
+
+<span class="code-comment"># Then use it without npx</span>
+<span class="code-cmd">skillbox install</span> <span class="code-arg">frontend/react-components</span></code></pre>
+            </div>
+
+            <div class="install-paths-box">
+              <div class="install-paths-title">Auto-detected install paths</div>
+              <div class="install-paths-list">
+                <div class="install-path-row"><span class="install-path-tool">Claude Code</span><span style="color:var(--color-text-faint)">&rarr;</span><span class="install-path-val">~/.claude/skills/</span></div>
+                <div class="install-path-row"><span class="install-path-tool">Cursor</span><span style="color:var(--color-text-faint)">&rarr;</span><span class="install-path-val">~/.cursor/skills/</span></div>
+                <div class="install-path-row"><span class="install-path-tool">Codex</span><span style="color:var(--color-text-faint)">&rarr;</span><span class="install-path-val">~/.codex/skills/</span></div>
+                <div class="install-path-row" style="color:var(--color-text-faint)"><span class="install-path-tool">Project</span><span>&rarr;</span><span>./.&lt;tool&gt;/skills/</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VSCode Extension Column -->
+        <div class="install-block">
+          <div class="install-block-header">
+            <div class="install-block-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <span class="install-block-title">VSCode / Cursor Extension</span>
+          </div>
+          <div class="install-block-body">
+            <div class="install-step-list">
+              <div class="install-step">
+                <div class="install-step-num" aria-hidden="true">1</div>
+                <div>
+                  <div class="install-step-label">Open the Extensions panel</div>
+                  <div class="install-step-desc">Press <kbd>Ctrl+Shift+X</kbd> (or <kbd>Cmd+Shift+X</kbd> on Mac) in VSCode or Cursor.</div>
+                </div>
+              </div>
+              <div class="install-step">
+                <div class="install-step-num" aria-hidden="true">2</div>
+                <div>
+                  <div class="install-step-label">Search for "Skillbox"</div>
+                  <div class="install-step-desc">Find the official Skillbox extension and click Install.</div>
+                </div>
+              </div>
+              <div class="install-step">
+                <div class="install-step-num" aria-hidden="true">3</div>
+                <div>
+                  <div class="install-step-label">Open the Skillbox panel</div>
+                  <div class="install-step-desc">Click the Skillbox icon in the Activity Bar to browse and install skills visually.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block-header">
+                <span class="code-block-label">Or install via CLI</span>
+                <button class="code-copy-btn" data-copy="code --install-extension skillbox.skillbox" aria-label="Copy command">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  Copy
+                </button>
+              </div>
+              <pre><code><span class="code-cmd">code</span> <span class="code-flag">--install-extension</span> <span class="code-string">skillbox.skillbox</span></code></pre>
+            </div>
+
+            <a href="https://marketplace.visualstudio.com/items?itemName=skillbox.skillbox" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer" style="align-self:flex-start">
+              View on Marketplace
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CLI Command Reference ───────────────────────────────── -->
+  <section class="section" id="commands" aria-labelledby="commands-heading" style="background:var(--color-dark-900);">
+    <div class="container">
+      <div class="section-label">CLI Reference</div>
+      <h2 class="section-title" id="commands-heading">All commands</h2>
+      <p class="section-subtitle">Complete reference for every Skillbox CLI command.</p>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-card reveal">
+          <div class="cmd-card-name">skillbox install &lt;skill&gt;</div>
+          <div class="cmd-card-desc">Install a skill to all detected AI tools. Use <code>--project</code> to install locally, or <code>--tool &lt;name&gt;</code> to target a specific tool.</div>
+          <div class="cmd-card-example">$ npx skillbox install frontend/react-components<br>$ npx skillbox install backend/django --project<br>$ npx skillbox install devops/docker --tool cursor</div>
+        </div>
+
+        <div class="cmd-card reveal reveal-delay-1">
+          <div class="cmd-card-name">skillbox list</div>
+          <div class="cmd-card-desc">List all available skills in the registry grouped by category. Use <code>--installed</code> to show only installed skills.</div>
+          <div class="cmd-card-example">$ npx skillbox list<br>$ npx skillbox list --installed<br>$ npx skillbox list --category backend</div>
+        </div>
+
+        <div class="cmd-card reveal reveal-delay-2">
+          <div class="cmd-card-name">skillbox search &lt;query&gt;</div>
+          <div class="cmd-card-desc">Search skills by name, description, or tags. Returns ranked results matching your query.</div>
+          <div class="cmd-card-example">$ npx skillbox search react<br>$ npx skillbox search "database design"<br>$ npx skillbox search kubernetes</div>
+        </div>
+
+        <div class="cmd-card reveal">
+          <div class="cmd-card-name">skillbox detect</div>
+          <div class="cmd-card-desc">Detect which AI coding tools are installed on your system and show their install paths for skills.</div>
+          <div class="cmd-card-example">$ npx skillbox detect</div>
+        </div>
+
+        <div class="cmd-card reveal reveal-delay-1">
+          <div class="cmd-card-name">skillbox remove &lt;skill&gt;</div>
+          <div class="cmd-card-desc">Remove an installed skill from all detected AI tools. Use <code>--tool</code> to remove from a specific tool only.</div>
+          <div class="cmd-card-example">$ npx skillbox remove frontend/react-components<br>$ npx skillbox remove backend/django --tool cursor</div>
+        </div>
+
+        <div class="cmd-card reveal reveal-delay-2">
+          <div class="cmd-card-name">skillbox update</div>
+          <div class="cmd-card-desc">Update all installed skills to the latest version from the registry.</div>
+          <div class="cmd-card-example">$ npx skillbox update<br>$ npx skillbox update frontend/react-components</div>
+        </div>
+      </div>
+
+      <div style="margin-top:40px;" class="reveal">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-label">Full install workflow example</span>
+            <button class="code-copy-btn" data-copy="npx skillbox detect
+npx skillbox search react
+npx skillbox install frontend/react-components
+npx skillbox install frontend/nextjs-app-router
+npx skillbox list --installed" aria-label="Copy full workflow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy all
+            </button>
+          </div>
+          <pre><code><span class="code-comment"># 1. See which tools Skillbox can install to</span>
+<span class="code-cmd">npx skillbox detect</span>
+
+<span class="code-comment"># 2. Find skills for your stack</span>
+<span class="code-cmd">npx skillbox search</span> <span class="code-arg">react</span>
+
+<span class="code-comment"># 3. Install the skills you need</span>
+<span class="code-cmd">npx skillbox install</span> <span class="code-arg">frontend/react-components</span>
+<span class="code-cmd">npx skillbox install</span> <span class="code-arg">frontend/nextjs-app-router</span>
+
+<span class="code-comment"># 4. Confirm they're installed</span>
+<span class="code-cmd">npx skillbox list</span> <span class="code-flag">--installed</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Environment Variables ───────────────────────────────── -->
+  <section class="section" id="env-vars" aria-labelledby="env-heading" style="background:var(--color-dark-950);">
+    <div class="container">
+      <div class="section-label">Configuration</div>
+      <h2 class="section-title" id="env-heading">Environment variables</h2>
+      <p class="section-subtitle">Configure Skillbox behavior with environment variables. All are optional — Skillbox works with sensible defaults.</p>
+
+      <div class="reveal">
+        <div class="note-box" style="margin-top:32px;">
+          <svg class="note-box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div class="note-box-content">
+            Set these in your shell profile (<code>~/.bashrc</code>, <code>~/.zshrc</code>) or pass them inline when running commands.
+          </div>
+        </div>
+
+        <table class="env-table">
+          <thead>
+            <tr>
+              <th>Variable</th>
+              <th>Description</th>
+              <th>Default</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>SKILLBOX_REGISTRY</td>
+              <td>URL or local path to a custom skill registry. Use for local development or private registries.</td>
+              <td>https://registry.skillbox.dev</td>
+            </tr>
+            <tr>
+              <td>SKILLBOX_TOOLS_DIR</td>
+              <td>Override the base directory where tools are detected. Useful in CI/CD or non-standard setups.</td>
+              <td>~/ (home directory)</td>
+            </tr>
+            <tr>
+              <td>SKILLBOX_NO_COLOR</td>
+              <td>Disable colored terminal output. Useful for log aggregation or CI environments.</td>
+              <td>false</td>
+            </tr>
+            <tr>
+              <td>SKILLBOX_DEBUG</td>
+              <td>Enable verbose debug logging for troubleshooting install issues.</td>
+              <td>false</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="code-block" style="margin-top:24px;">
+          <div class="code-block-header">
+            <span class="code-block-label">Local development with a custom registry</span>
+            <button class="code-copy-btn" data-copy="SKILLBOX_REGISTRY=./local-skills npx skillbox install backend/my-custom-skill" aria-label="Copy command">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+          <pre><code><span class="code-comment"># Point Skillbox at a local skills directory</span>
+<span class="code-keyword">SKILLBOX_REGISTRY</span>=<span class="code-value">./local-skills</span> <span class="code-cmd">npx skillbox install</span> <span class="code-arg">backend/my-custom-skill</span>
+
+<span class="code-comment"># Or export it for the session</span>
+<span class="code-keyword">export</span> <span class="code-keyword">SKILLBOX_REGISTRY</span>=<span class="code-value">./local-skills</span>
+<span class="code-cmd">npx skillbox list</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Requirements ────────────────────────────────────────── -->
+  <section class="section-sm" id="requirements" aria-labelledby="req-heading" style="background:var(--color-dark-900);">
+    <div class="container">
+      <div class="section-label">Requirements</div>
+      <h2 class="section-title" id="req-heading">System requirements</h2>
+
+      <div class="card-grid-3 reveal" style="margin-top:32px;">
+        <div class="content-card">
+          <div class="content-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.59 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9a16 16 0 0 0 6.29 6.29l.83-.83a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div class="content-card-title">Node.js 18+</div>
+          <div class="content-card-desc">Skillbox requires Node.js 18 or later. Install from nodejs.org or use nvm.</div>
+        </div>
+
+        <div class="content-card">
+          <div class="content-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          </div>
+          <div class="content-card-title">macOS / Linux / WSL</div>
+          <div class="content-card-desc">Works on macOS and Linux. Windows is supported via WSL 2. Native Windows support is planned.</div>
+        </div>
+
+        <div class="content-card">
+          <div class="content-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <div class="content-card-title">At least one AI tool</div>
+          <div class="content-card-desc">Skills install into Claude Code, Cursor, Codex, or any tool supporting the Agent Skills standard.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="footer-logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <span class="footer-logo-text">Skillbox</span>
+        </div>
+        <p class="footer-tagline">A curated registry of AI coding skills. Install expert instructions with one command.</p>
+        <div class="footer-badge">MIT License</div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Pages</div>
+        <div class="footer-links">
+          <a href="index.html"      class="footer-link">Home</a>
+          <a href="skills.html"     class="footer-link">Skills Browser</a>
+          <a href="install.html"    class="footer-link">Installation</a>
+          <a href="docs.html"       class="footer-link">Documentation</a>
+          <a href="contribute.html" class="footer-link">Contribute</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Resources</div>
+        <div class="footer-links">
+          <a href="https://github.com/skillbox/skillbox" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub</a>
+          <a href="https://www.npmjs.com/package/skillbox" target="_blank" rel="noopener noreferrer" class="footer-link">npm package</a>
+          <a href="https://marketplace.visualstudio.com/items?itemName=skillbox.skillbox" target="_blank" rel="noopener noreferrer" class="footer-link">VSCode Extension</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Standards</div>
+        <div class="footer-links">
+          <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer" class="footer-link">Agent Skills</a>
+          <a href="https://agentskills.io/spec" target="_blank" rel="noopener noreferrer" class="footer-link">Specification</a>
+          <a href="https://github.com/skillbox/skillbox/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="footer-link">License</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">Built with care for the developer community.</div>
+      <div class="footer-standard">
+        Built with the <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer">Agent Skills open standard</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
+  <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg">Copied to clipboard!</span>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,635 @@
+{
+  "version": "1",
+  "updatedAt": "2026-03-12T14:07:50Z",
+  "skills": [
+    {
+      "id": "backend/api-design",
+      "name": "api-design",
+      "description": "REST API design best practices covering resource naming, versioning, pagination, error handling, and documentation. Use this skill when designing or reviewing HTTP APIs to ensure consistency, usability, and adherence to industry standards.",
+      "category": "backend",
+      "tags": [
+        "api",
+        "rest",
+        "design",
+        "openapi",
+        "http"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/backend/api-design/SKILL.md",
+      "updatedAt": "2026-03-12T13:16:07Z"
+    },
+    {
+      "id": "backend/database-design",
+      "name": "database-design",
+      "description": "Database schema design, migrations, indexing, and query optimization for relational databases. Use this skill when designing schemas, writing migrations, optimizing queries, or making data modeling decisions. Covers PostgreSQL patterns applicable to most SQL databases.",
+      "category": "backend",
+      "tags": [
+        "database",
+        "sql",
+        "postgresql",
+        "schema",
+        "migrations"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/backend/database-design/SKILL.md",
+      "updatedAt": "2026-03-12T12:52:03Z"
+    },
+    {
+      "id": "backend/django",
+      "name": "django",
+      "description": "Django best practices for modern web applications covering project structure, models, views, Django REST Framework, database optimization, and testing. Use this skill when building or maintaining Django applications.",
+      "category": "backend",
+      "tags": [
+        "django",
+        "python",
+        "drf",
+        "web",
+        "orm"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/backend/django/SKILL.md",
+      "updatedAt": "2026-03-12T13:18:44Z"
+    },
+    {
+      "id": "backend/microservices",
+      "name": "microservices",
+      "description": "Microservices architecture patterns including service decomposition, inter-service communication, distributed transactions, and observability. Use this skill when designing, building, or troubleshooting distributed backend systems.",
+      "category": "backend",
+      "tags": [
+        "microservices",
+        "distributed",
+        "architecture",
+        "messaging",
+        "grpc"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/backend/microservices/SKILL.md",
+      "updatedAt": "2026-03-12T13:16:56Z"
+    },
+    {
+      "id": "backend/monolithic-architecture",
+      "name": "monolithic-architecture",
+      "description": "Modular monolith architecture best practices covering project structure, module boundaries, dependency management, and migration strategies. Use this skill when building new applications or restructuring existing monoliths for maintainability.",
+      "category": "backend",
+      "tags": [
+        "monolith",
+        "architecture",
+        "modular",
+        "design",
+        "structure"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/backend/monolithic-architecture/SKILL.md",
+      "updatedAt": "2026-03-12T13:17:47Z"
+    },
+    {
+      "id": "backend/node-express-api",
+      "name": "node-express-api",
+      "description": "Express.js API design patterns including middleware, error handling, validation, authentication, and project structure. Use this skill when building or maintaining REST APIs with Node.js and Express. Covers production-ready patterns for routing, security, and request handling.",
+      "category": "backend",
+      "tags": [
+        "node",
+        "express",
+        "api",
+        "rest",
+        "backend"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/backend/node-express-api/SKILL.md",
+      "updatedAt": "2026-03-12T12:50:38Z"
+    },
+    {
+      "id": "backend/python-fastapi",
+      "name": "python-fastapi",
+      "description": "FastAPI best practices including Pydantic models, async patterns, dependency injection, and API design. Use this skill when building or maintaining Python APIs with FastAPI. Covers project structure, validation, authentication, database integration, and testing.",
+      "category": "backend",
+      "tags": [
+        "python",
+        "fastapi",
+        "pydantic",
+        "async",
+        "api"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/backend/python-fastapi/SKILL.md",
+      "updatedAt": "2026-03-12T12:51:17Z"
+    },
+    {
+      "id": "backend/ruby-on-rails",
+      "name": "ruby-on-rails",
+      "description": "Ruby on Rails best practices covering ActiveRecord, controllers, service objects, background jobs, testing, and API design. Use this skill when building or maintaining Rails applications.",
+      "category": "backend",
+      "tags": [
+        "rails",
+        "ruby",
+        "activerecord",
+        "api",
+        "web"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/backend/ruby-on-rails/SKILL.md",
+      "updatedAt": "2026-03-12T13:19:47Z"
+    },
+    {
+      "id": "backend/spring-boot",
+      "name": "spring-boot",
+      "description": "Spring Boot best practices for Java and Kotlin applications covering project structure, REST controllers, JPA, security, and testing. Use this skill when building or maintaining Spring Boot backend services.",
+      "category": "backend",
+      "tags": [
+        "spring",
+        "java",
+        "kotlin",
+        "jpa",
+        "boot"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/backend/spring-boot/SKILL.md",
+      "updatedAt": "2026-03-12T13:21:00Z"
+    },
+    {
+      "id": "data/elasticsearch",
+      "name": "elasticsearch",
+      "description": "Elasticsearch best practices for search, analytics, and log management. Covers index design, query DSL, analyzers, aggregations, index lifecycle management, and ELK stack patterns. Use this skill when building search features, log pipelines, or analytics dashboards with Elasticsearch.",
+      "category": "data",
+      "tags": [
+        "elasticsearch",
+        "search",
+        "elk",
+        "indexing",
+        "fulltext"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/data/elasticsearch/SKILL.md",
+      "updatedAt": "2026-03-12T13:27:57Z"
+    },
+    {
+      "id": "data/mongodb",
+      "name": "mongodb",
+      "description": "MongoDB best practices for schema design, indexing, aggregation, and operations. Covers document modeling patterns, transactions, sharding, and driver configuration. Use this skill when building applications with MongoDB or optimizing existing MongoDB deployments.",
+      "category": "data",
+      "tags": [
+        "mongodb",
+        "nosql",
+        "document",
+        "schema",
+        "aggregation"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/data/mongodb/SKILL.md",
+      "updatedAt": "2026-03-12T13:24:58Z"
+    },
+    {
+      "id": "data/postgresql",
+      "name": "postgresql",
+      "description": "Advanced PostgreSQL patterns for production systems. Covers data types, indexing strategies, query optimization, partitioning, full-text search, row-level security, and operational concerns like connection pooling and backups. Use this skill when building or optimizing PostgreSQL databases beyond basic schema design.",
+      "category": "data",
+      "tags": [
+        "postgresql",
+        "sql",
+        "database",
+        "indexing",
+        "optimization"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/data/postgresql/SKILL.md",
+      "updatedAt": "2026-03-12T13:24:18Z"
+    },
+    {
+      "id": "data/redis",
+      "name": "redis",
+      "description": "Redis best practices for caching, session management, rate limiting, messaging, and data structure usage. Covers all major Redis data types, caching patterns, Lua scripting, cluster configuration, and memory management. Use this skill when integrating Redis into your application.",
+      "category": "data",
+      "tags": [
+        "redis",
+        "cache",
+        "nosql",
+        "messaging",
+        "sessions"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/data/redis/SKILL.md",
+      "updatedAt": "2026-03-12T13:25:42Z"
+    },
+    {
+      "id": "data/timeseries-databases",
+      "name": "timeseries-databases",
+      "description": "Time-series database patterns for metrics, IoT, financial data, and observability. Covers TimescaleDB, InfluxDB, data modeling, downsampling, retention policies, and query patterns. Use this skill when building systems that ingest and analyze time-stamped data at scale.",
+      "category": "data",
+      "tags": [
+        "timeseries",
+        "influxdb",
+        "timescaledb",
+        "metrics",
+        "iot"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/data/timeseries-databases/SKILL.md",
+      "updatedAt": "2026-03-12T13:27:08Z"
+    },
+    {
+      "id": "data/vector-databases",
+      "name": "vector-databases",
+      "description": "Vector database patterns for AI/ML applications including semantic search, retrieval-augmented generation (RAG), and recommendation systems. Covers embedding generation, Pinecone, pgvector, ChromaDB, Weaviate, similarity search strategies, and chunking. Use this skill when building AI-powered search or RAG pipelines.",
+      "category": "data",
+      "tags": [
+        "vector",
+        "embeddings",
+        "ai",
+        "rag",
+        "similarity"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/data/vector-databases/SKILL.md",
+      "updatedAt": "2026-03-12T13:26:27Z"
+    },
+    {
+      "id": "devops/aws-infrastructure",
+      "name": "aws-infrastructure",
+      "description": "AWS infrastructure patterns for deploying and operating web applications at scale. Covers VPC networking, compute (EC2/ECS), databases, storage, CDN, load balancing, IAM, DNS, and monitoring. Use this skill when designing or reviewing AWS architectures and configurations.",
+      "category": "devops",
+      "tags": [
+        "aws",
+        "cloud",
+        "infrastructure",
+        "ec2",
+        "s3"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/devops/aws-infrastructure/SKILL.md",
+      "updatedAt": "2026-03-12T13:30:51Z"
+    },
+    {
+      "id": "devops/docker-compose",
+      "name": "docker-compose",
+      "description": "Docker Compose patterns for development and production environments. Use this skill when writing or maintaining Docker Compose configurations, Dockerfiles, or containerized development workflows. Covers multi-stage builds, service orchestration, networking, and volumes.",
+      "category": "devops",
+      "tags": [
+        "docker",
+        "docker-compose",
+        "containers",
+        "devops",
+        "deployment"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/devops/docker-compose/SKILL.md",
+      "updatedAt": "2026-03-12T12:52:36Z"
+    },
+    {
+      "id": "devops/github-actions",
+      "name": "github-actions",
+      "description": "GitHub Actions CI/CD pipeline patterns for testing, building, and deploying applications. Use this skill when creating or maintaining GitHub Actions workflows. Covers workflow syntax, job orchestration, caching, secrets management, and common pipeline patterns.",
+      "category": "devops",
+      "tags": [
+        "github-actions",
+        "ci-cd",
+        "automation",
+        "devops",
+        "deployment"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/devops/github-actions/SKILL.md",
+      "updatedAt": "2026-03-12T12:53:10Z"
+    },
+    {
+      "id": "devops/gitlab-ci",
+      "name": "gitlab-ci",
+      "description": "GitLab CI/CD best practices for building reliable, fast pipelines. Covers pipeline structure, caching, Docker builds, environment deployments, secrets management, and advanced patterns like DAG and parent-child pipelines. Use this skill when writing or reviewing .gitlab-ci.yml configurations.",
+      "category": "devops",
+      "tags": [
+        "gitlab",
+        "ci",
+        "cd",
+        "pipeline",
+        "automation"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/devops/gitlab-ci/SKILL.md",
+      "updatedAt": "2026-03-12T13:27:25Z"
+    },
+    {
+      "id": "devops/kubernetes",
+      "name": "kubernetes",
+      "description": "Kubernetes best practices for deploying and managing containerized workloads in production. Covers pod design, deployment strategies, service networking, config management, autoscaling, security, and observability. Use this skill when designing or reviewing Kubernetes manifests and Helm charts.",
+      "category": "devops",
+      "tags": [
+        "kubernetes",
+        "k8s",
+        "containers",
+        "orchestration",
+        "helm"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/devops/kubernetes/SKILL.md",
+      "updatedAt": "2026-03-12T13:26:44Z"
+    },
+    {
+      "id": "devops/nginx",
+      "name": "nginx",
+      "description": "Nginx configuration best practices for web serving, reverse proxying, and load balancing. Covers server blocks, SSL/TLS, caching, security headers, rate limiting, and performance tuning. Use this skill when writing or reviewing Nginx configurations for production deployments.",
+      "category": "devops",
+      "tags": [
+        "nginx",
+        "proxy",
+        "ssl",
+        "server",
+        "loadbalancer"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/devops/nginx/SKILL.md",
+      "updatedAt": "2026-03-12T13:27:48Z"
+    },
+    {
+      "id": "devops/terraform",
+      "name": "terraform",
+      "description": "Terraform Infrastructure as Code best practices for provisioning and managing cloud resources. Covers project structure, state management, module design, variable handling, and CI/CD integration. Use this skill when writing or reviewing Terraform configurations across AWS, GCP, or Azure.",
+      "category": "devops",
+      "tags": [
+        "terraform",
+        "iac",
+        "infrastructure",
+        "cloud",
+        "modules"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/devops/terraform/SKILL.md",
+      "updatedAt": "2026-03-12T13:27:05Z"
+    },
+    {
+      "id": "frontend/ajax-patterns",
+      "name": "ajax-patterns",
+      "description": "Modern AJAX and Fetch API patterns for client-server communication. Use this skill when building data fetching layers, handling file uploads, implementing real-time updates, or maintaining legacy jQuery AJAX code. Covers fetch best practices, cancellation, retries, SSE, WebSockets, and CORS handling.",
+      "category": "frontend",
+      "tags": [
+        "ajax",
+        "fetch",
+        "http",
+        "async",
+        "javascript"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/ajax-patterns/SKILL.md",
+      "updatedAt": "2026-03-12T13:32:24Z"
+    },
+    {
+      "id": "frontend/alpine-js",
+      "name": "alpine-js",
+      "description": "Alpine.js best practices for lightweight interactivity in server-rendered HTML. Use this skill when adding reactive behavior to pages without a full SPA framework. Covers core directives, component patterns, stores, plugins, HTMX integration, and transition animations.",
+      "category": "frontend",
+      "tags": [
+        "alpine",
+        "javascript",
+        "lightweight",
+        "reactive",
+        "html"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/alpine-js/SKILL.md",
+      "updatedAt": "2026-03-12T13:31:29Z"
+    },
+    {
+      "id": "frontend/django-templates",
+      "name": "django-templates",
+      "description": "Django template system best practices for server-rendered HTML applications. Use this skill when building template hierarchies, custom tags and filters, integrating HTMX with Django views, or managing static assets. Covers template inheritance, context processors, form rendering, and security.",
+      "category": "frontend",
+      "tags": [
+        "django",
+        "templates",
+        "jinja",
+        "html",
+        "python"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/django-templates/SKILL.md",
+      "updatedAt": "2026-03-12T13:31:04Z"
+    },
+    {
+      "id": "frontend/htmx",
+      "name": "htmx",
+      "description": "HTMX best practices for building hypermedia-driven web applications. Use this skill when replacing JSON APIs with HTML-over-the-wire patterns, adding dynamic behavior to server-rendered pages, or integrating HTMX with Django, Flask, or Rails backends. Covers core attributes, swap strategies, SSE, WebSockets, and Alpine.js integration.",
+      "category": "frontend",
+      "tags": [
+        "htmx",
+        "hypermedia",
+        "html",
+        "ajax",
+        "server-driven"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/htmx/SKILL.md",
+      "updatedAt": "2026-03-12T13:31:56Z"
+    },
+    {
+      "id": "frontend/ionic-framework",
+      "name": "ionic-framework",
+      "description": "Ionic Framework best practices for building cross-platform mobile and web apps. Use this skill when building hybrid apps with Ionic and Capacitor, configuring navigation, theming, native plugins, or preparing builds for iOS and Android. Covers Angular/React/Vue integration and mobile performance.",
+      "category": "frontend",
+      "tags": [
+        "ionic",
+        "mobile",
+        "capacitor",
+        "hybrid",
+        "cross-platform"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/ionic-framework/SKILL.md",
+      "updatedAt": "2026-03-12T13:30:40Z"
+    },
+    {
+      "id": "frontend/jquery",
+      "name": "jquery",
+      "description": "jQuery best practices for maintaining legacy codebases and planning migration to vanilla JavaScript. Use this skill when working on projects that use jQuery, optimizing jQuery performance, or incrementally replacing jQuery with modern browser APIs. Covers DOM manipulation, event handling, AJAX, plugins, and migration patterns.",
+      "category": "frontend",
+      "tags": [
+        "jquery",
+        "javascript",
+        "dom",
+        "legacy",
+        "migration"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/jquery/SKILL.md",
+      "updatedAt": "2026-03-12T13:32:52Z"
+    },
+    {
+      "id": "frontend/nextjs-app-router",
+      "name": "nextjs-app-router",
+      "description": "Next.js App Router patterns including server components, data fetching, routing, layouts, and caching strategies. Use this skill when building or maintaining Next.js 13+ applications with the App Router. Covers server vs client components, streaming, metadata, and deployment patterns.",
+      "category": "frontend",
+      "tags": [
+        "nextjs",
+        "react",
+        "server-components",
+        "app-router",
+        "ssr"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/nextjs-app-router/SKILL.md",
+      "updatedAt": "2026-03-12T12:49:23Z"
+    },
+    {
+      "id": "frontend/react-components",
+      "name": "react-components",
+      "description": "React component best practices with hooks, TypeScript, and modern patterns. Use this skill when building, refactoring, or reviewing React components. Covers component structure, state management, performance optimization, custom hooks, and TypeScript integration for production-quality React code.",
+      "category": "frontend",
+      "tags": [
+        "react",
+        "typescript",
+        "hooks",
+        "components",
+        "frontend"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/react-components/SKILL.md",
+      "updatedAt": "2026-03-12T12:48:46Z"
+    },
+    {
+      "id": "frontend/react-patterns",
+      "name": "react-patterns",
+      "description": "Advanced React patterns beyond basic component building. Use this skill when designing complex component APIs, managing shared state, optimizing renders, or working with Server Components and Suspense. Covers compound components, hooks composition, context patterns, and memoization.",
+      "category": "frontend",
+      "tags": [
+        "react",
+        "patterns",
+        "hooks",
+        "advanced",
+        "state"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/react-patterns/SKILL.md",
+      "updatedAt": "2026-03-12T13:33:36Z"
+    },
+    {
+      "id": "frontend/tailwind-css",
+      "name": "tailwind-css",
+      "description": "Tailwind CSS best practices for responsive design, component styling, and maintainable utility-first CSS. Use this skill when styling UI components, building responsive layouts, or establishing design system patterns with Tailwind CSS v3+.",
+      "category": "frontend",
+      "tags": [
+        "tailwind",
+        "css",
+        "responsive",
+        "styling",
+        "design-system"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/tailwind-css/SKILL.md",
+      "updatedAt": "2026-03-12T12:50:05Z"
+    },
+    {
+      "id": "frontend/vercel-deployment",
+      "name": "vercel-deployment",
+      "description": "Vercel deployment best practices for frontend and fullstack applications. Use this skill when configuring deployments, serverless/edge functions, caching strategies, or custom domains on Vercel. Covers vercel.json configuration, environment management, ISR, and monorepo support.",
+      "category": "frontend",
+      "tags": [
+        "vercel",
+        "deployment",
+        "serverless",
+        "edge",
+        "hosting"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/frontend/vercel-deployment/SKILL.md",
+      "updatedAt": "2026-03-12T13:29:47Z"
+    },
+    {
+      "id": "general/code-review",
+      "name": "code-review",
+      "description": "Code review checklist and best practices for reviewing pull requests. Use this skill when reviewing code, preparing code for review, or establishing review standards. Covers correctness, security, performance, readability, and constructive feedback patterns.",
+      "category": "general",
+      "tags": [
+        "code-review",
+        "pull-requests",
+        "quality",
+        "best-practices",
+        "collaboration"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/general/code-review/SKILL.md",
+      "updatedAt": "2026-03-12T12:55:13Z"
+    },
+    {
+      "id": "general/git-workflow",
+      "name": "git-workflow",
+      "description": "Git workflow patterns including branching strategies, commit conventions, rebasing, and collaboration practices. Use this skill when working with Git for version control, resolving merge conflicts, or establishing team Git workflows.",
+      "category": "general",
+      "tags": [
+        "git",
+        "workflow",
+        "branching",
+        "commits",
+        "version-control"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/general/git-workflow/SKILL.md",
+      "updatedAt": "2026-03-12T12:55:58Z"
+    },
+    {
+      "id": "testing/e2e-playwright",
+      "name": "e2e-playwright",
+      "description": "Playwright end-to-end testing patterns for web applications. Use this skill when writing, maintaining, or debugging E2E tests with Playwright. Covers page object models, selectors, assertions, API testing, visual regression, and CI integration.",
+      "category": "testing",
+      "tags": [
+        "playwright",
+        "e2e",
+        "testing",
+        "automation",
+        "browser"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/testing/e2e-playwright/SKILL.md",
+      "updatedAt": "2026-03-12T12:54:32Z"
+    },
+    {
+      "id": "testing/unit-testing",
+      "name": "unit-testing",
+      "description": "Unit testing best practices including test structure, mocking, assertions, and test organization. Use this skill when writing, reviewing, or refactoring unit tests. Covers patterns for JavaScript/TypeScript (Jest, Vitest) and Python (pytest) with language-agnostic principles.",
+      "category": "testing",
+      "tags": [
+        "testing",
+        "unit-tests",
+        "jest",
+        "vitest",
+        "pytest"
+      ],
+      "version": "1.0",
+      "author": "skillbox",
+      "skillUrl": "https://raw.githubusercontent.com/MarcoRiformworking/skillbox/main/skills/testing/unit-testing/SKILL.md",
+      "updatedAt": "2026-03-12T12:53:54Z"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "skillbox-monorepo",
+  "private": true,
+  "workspaces": ["cli", "extension"],
+  "scripts": {
+    "build:cli": "cd cli && npm run build",
+    "build:ext": "cd extension && npm run build",
+    "build:desktop": "cd desktop && npm run build",
+    "build:registry": "cd scripts && npx tsx build-registry.ts",
+    "build": "npm run build:registry && npm run build:cli && npm run build:ext",
+    "validate": "cd scripts && npx tsx validate-skills.ts",
+    "desktop": "cd desktop && npm start"
+  }
+}

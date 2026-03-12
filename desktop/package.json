@@ -1,0 +1,51 @@
+{
+  "name": "skillbox-desktop",
+  "version": "0.1.0",
+  "description": "Skillbox Desktop — Skill manager IDE for AI coding skills",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node launch.js",
+    "build": "electron-builder --win --mac --linux",
+    "dev": "node launch.js --dev",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "author": "Skillbox",
+  "license": "MIT",
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.0",
+    "electron": "^41.0.0",
+    "electron-builder": "^25.1.0",
+    "vitest": "^4.1.0"
+  },
+  "build": {
+    "appId": "io.skillbox.desktop",
+    "productName": "Skillbox",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "../icon.svg"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "../icon.svg"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "../icon.svg"
+    }
+  },
+  "dependencies": {
+    "@lydell/node-pty": "^1.2.0-beta.3",
+    "sql.js": "^1.14.1",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "xterm-addon-web-links": "^0.9.0"
+  }
+}
