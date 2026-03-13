@@ -1,11 +1,13 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell, protocol } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { execSync } = require('node:child_process');
 const crypto = require('node:crypto');
 const pty = require('@lydell/node-pty');
+const { ExtensionHost } = require('./extension-host/host');
 
 let mainWindow;
+let extensionHost;
 
 // ── Paths ───────────────────────────────────────────────────────
 const SKILLS_ROOT = path.resolve(__dirname, '..', '..', 'skills');
@@ -261,11 +263,11 @@ function createWindow() {
     minWidth: 960,
     minHeight: 600,
     title: 'Skillbox',
-    backgroundColor: '#1a1625',
+    backgroundColor: '#09090b',
     frame: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: process.platform === 'win32' ? {
-      color: '#150f20',
+      color: '#0f1117',
       symbolColor: '#9ca3af',
       height: 38,
     } : undefined,
@@ -273,19 +275,60 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webviewTag: true,
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  // Load React UI — Vite dev server in dev mode, built files in production
+  const isDev = process.argv.includes('--dev');
+  const useVite = process.argv.includes('--vite');
 
-  if (process.argv.includes('--dev')) {
+  if (useVite) {
+    // Vite dev server mode — hot reload
+    mainWindow.loadURL('http://localhost:5173');
+  } else if (fs.existsSync(path.join(__dirname, '..', 'dist-ui', 'index.html'))) {
+    // Production — load built React UI
+    mainWindow.loadFile(path.join(__dirname, '..', 'dist-ui', 'index.html'));
+  } else {
+    // Fallback — legacy vanilla JS UI
+    mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  }
+
+  // Notify renderer of fullscreen changes (macOS traffic lights)
+  mainWindow.on('enter-full-screen', () => {
+    mainWindow.webContents.send('fullscreen-change', true);
+  });
+  mainWindow.on('leave-full-screen', () => {
+    mainWindow.webContents.send('fullscreen-change', false);
+  });
+
+  if (isDev || useVite) {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 }
 
 app.whenReady().then(async () => {
+  // Register custom protocol for extension webview assets
+  protocol.registerFileProtocol('skillbox-ext', (request, callback) => {
+    try {
+      // URL format: skillbox-ext://ext/relative/path
+      const url = new URL(request.url);
+      const relPath = decodeURIComponent(url.pathname.replace(/^\//, ''));
+      // Find the extension that owns this asset
+      const extDir = getExtensionsDir();
+      // Try to resolve from any installed extension
+      const dirs = fs.readdirSync(extDir);
+      for (const d of dirs) {
+        const full = path.join(extDir, d, relPath);
+        if (fs.existsSync(full)) { callback({ path: full }); return; }
+      }
+      callback({ statusCode: 404 });
+    } catch { callback({ statusCode: 404 }); }
+  });
+
   await initDatabase();
   createWindow();
+  extensionHost = new ExtensionHost(mainWindow);
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
@@ -424,6 +467,39 @@ ipcMain.handle('browse-folder', async () => {
   });
   if (result.canceled || !result.filePaths.length) return null;
   return result.filePaths[0];
+});
+
+ipcMain.handle('read-directory', async (_e, dirPath, depth = 1) => {
+  const ignoreDirs = new Set([
+    'node_modules', '.git', '__pycache__', '.venv', 'venv', '.next', '.nuxt',
+    'dist', 'build', '.cache', '.parcel-cache', 'coverage', '.turbo',
+    '.svelte-kit', '.output', 'target', 'vendor', '.gradle', '.idea',
+    '.vscode', '.DS_Store', 'Thumbs.db',
+  ]);
+  function scan(dir, currentDepth) {
+    const entries = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true })
+        .filter(e => !e.name.startsWith('.') || e.name === '.env' || e.name === '.gitignore')
+        .sort((a, b) => {
+          if (a.isDirectory() && !b.isDirectory()) return -1;
+          if (!a.isDirectory() && b.isDirectory()) return 1;
+          return a.name.localeCompare(b.name);
+        });
+      for (const item of items) {
+        if (ignoreDirs.has(item.name)) continue;
+        const fullPath = path.join(dir, item.name);
+        const isDir = item.isDirectory();
+        const entry = { name: item.name, path: fullPath, isDir };
+        if (isDir && currentDepth < depth) {
+          entry.children = scan(fullPath, currentDepth + 1);
+        }
+        entries.push(entry);
+      }
+    } catch { /* skip */ }
+    return entries;
+  }
+  return scan(dirPath, 0);
 });
 
 // ── IPC: Environments ───────────────────────────────────────────
@@ -1139,6 +1215,92 @@ ipcMain.handle('open-external', async (_e, url) => {
   shell.openExternal(url);
 });
 
+// ── IPC: File Operations (Explorer) ─────────────────────────────
+ipcMain.handle('reveal-in-finder', async (_e, filePath) => {
+  shell.showItemInFolder(filePath);
+});
+
+ipcMain.handle('copy-path', async (_e, filePath) => {
+  const { clipboard } = require('electron');
+  clipboard.writeText(filePath);
+});
+
+ipcMain.handle('copy-relative-path', async (_e, filePath, basePath) => {
+  const { clipboard } = require('electron');
+  clipboard.writeText(path.relative(basePath, filePath));
+});
+
+ipcMain.handle('read-file', async (_e, filePath) => {
+  return fs.readFileSync(filePath, 'utf-8');
+});
+
+// File watchers for open editor tabs
+const _fileWatchers = new Map();
+ipcMain.handle('watch-file', (_e, filePath) => {
+  if (_fileWatchers.has(filePath)) return;
+  try {
+    const watcher = fs.watch(filePath, { persistent: false }, (eventType) => {
+      if (eventType === 'change' && mainWindow && !mainWindow.isDestroyed()) {
+        try {
+          const content = fs.readFileSync(filePath, 'utf-8');
+          mainWindow.webContents.send('file-changed', { filePath, content });
+        } catch {}
+      }
+    });
+    _fileWatchers.set(filePath, watcher);
+  } catch {}
+});
+ipcMain.handle('unwatch-file', (_e, filePath) => {
+  const w = _fileWatchers.get(filePath);
+  if (w) { w.close(); _fileWatchers.delete(filePath); }
+});
+
+ipcMain.handle('write-file', async (_e, filePath, content) => {
+  fs.writeFileSync(filePath, content, 'utf-8');
+});
+
+ipcMain.handle('create-file', async (_e, filePath) => {
+  fs.writeFileSync(filePath, '', 'utf-8');
+});
+
+ipcMain.handle('create-folder', async (_e, dirPath) => {
+  fs.mkdirSync(dirPath, { recursive: true });
+});
+
+ipcMain.handle('rename-path', async (_e, oldPath, newPath) => {
+  fs.renameSync(oldPath, newPath);
+});
+
+ipcMain.handle('delete-path', async (_e, targetPath) => {
+  const stat = fs.statSync(targetPath);
+  if (stat.isDirectory()) {
+    fs.rmSync(targetPath, { recursive: true, force: true });
+  } else {
+    fs.unlinkSync(targetPath);
+  }
+});
+
+// Native context menu (like VS Code)
+ipcMain.handle('show-context-menu', async (_e, menuTemplate) => {
+  return new Promise((resolve) => {
+    const buildItems = (items) => items.map(item => {
+      if (item.type === 'separator') return { type: 'separator' };
+      const menuItem = {
+        label: item.label,
+        enabled: item.enabled !== false,
+        click: () => resolve(item.action),
+      };
+      if (item.accelerator) menuItem.accelerator = item.accelerator;
+      return menuItem;
+    });
+    const menu = Menu.buildFromTemplate(buildItems(menuTemplate));
+    menu.popup({ window: mainWindow });
+    menu.on('menu-will-close', () => {
+      setTimeout(() => resolve(null), 100);
+    });
+  });
+});
+
 // ── IPC: DB Stats ───────────────────────────────────────────────
 ipcMain.handle('get-db-stats', async () => {
   const projects = db.exec('SELECT COUNT(*) FROM projects')[0]?.values[0][0] || 0;
@@ -1217,4 +1379,678 @@ ipcMain.handle('send-message', async (_e, msgData) => {
 ipcMain.handle('delete-message', async (_e, msgId) => {
   dbRun('DELETE FROM messages WHERE id = ?', [msgId]);
   return { success: true };
+});
+
+// ── IPC: Settings ────────────────────────────────────────────────
+const DEFAULT_SETTINGS = {
+  "editor.fontFamily": "'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+  "editor.fontSize": 14,
+  "editor.tabSize": 2,
+  "editor.lineHeight": 22,
+  "editor.minimap": true,
+  "editor.wordWrap": "off",
+  "editor.lineNumbers": "on",
+  "editor.bracketPairColorization": true,
+  "editor.fontLigatures": true,
+  "editor.renderWhitespace": "selection",
+  "editor.cursorBlinking": "smooth",
+  "editor.smoothScrolling": true,
+  "terminal.fontFamily": "'Cascadia Code', 'Fira Code', 'SF Mono', Menlo, monospace",
+  "terminal.fontSize": 13,
+  "terminal.lineHeight": 1.3,
+  "terminal.cursorBlink": true,
+  "terminal.scrollback": 5000,
+  "terminal.theme": "default",
+  "workbench.colorTheme": "Skillbox Dark",
+  "workbench.primaryColor": "#0090ff",
+  "workbench.mode": "dark",
+  "workbench.accent": "blue",
+  "workbench.gray": "slate",
+  "workbench.sidebarWidth": 220,
+  "workbench.rightPanelWidth": 260,
+  "workbench.activityBar.visible": true,
+  "general.language": "en",
+  "extensions.autoUpdate": true,
+};
+
+function getSettingsPath() { return path.join(getDataDir(), 'settings.json'); }
+
+function readUserSettings() {
+  try {
+    return JSON.parse(fs.readFileSync(getSettingsPath(), 'utf-8'));
+  } catch { return {}; }
+}
+
+function writeUserSettings(settings) {
+  fs.writeFileSync(getSettingsPath(), JSON.stringify(settings, null, 2), 'utf-8');
+}
+
+ipcMain.handle('get-default-settings', () => DEFAULT_SETTINGS);
+
+ipcMain.handle('get-settings', () => {
+  const user = readUserSettings();
+  return { ...DEFAULT_SETTINGS, ...user };
+});
+
+ipcMain.handle('save-settings', (_e, newSettings) => {
+  // Only save values that differ from defaults
+  const overrides = {};
+  for (const [key, val] of Object.entries(newSettings)) {
+    if (JSON.stringify(val) !== JSON.stringify(DEFAULT_SETTINGS[key])) {
+      overrides[key] = val;
+    }
+  }
+  writeUserSettings(overrides);
+  return { ...DEFAULT_SETTINGS, ...overrides };
+});
+
+// ── IPC: Extensions ──────────────────────────────────────────────
+function getExtensionsDir() {
+  const dir = path.join(getDataDir(), 'extensions');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+ipcMain.handle('get-installed-extensions', () => {
+  const extDir = getExtensionsDir();
+  const results = [];
+  try {
+    const dirs = fs.readdirSync(extDir).filter(d => {
+      return fs.statSync(path.join(extDir, d)).isDirectory();
+    });
+    for (const dir of dirs) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(path.join(extDir, dir, 'package.json'), 'utf-8'));
+        results.push({
+          id: dir,
+          name: pkg.displayName || pkg.name || dir,
+          version: pkg.version || '0.0.0',
+          description: pkg.description || '',
+          publisher: pkg.publisher || 'Unknown',
+          icon: pkg.icon ? path.join(extDir, dir, pkg.icon) : null,
+          enabled: true,
+          path: path.join(extDir, dir),
+          categories: pkg.categories || [],
+          contributes: pkg.contributes || {},
+        });
+      } catch { /* skip invalid */ }
+    }
+  } catch { /* no extensions */ }
+  return results;
+});
+
+ipcMain.handle('install-extension-vsix', async (_e, vsixPath) => {
+  // Extract .vsix (which is a .zip) to extensions dir
+  const AdmZip = require('adm-zip');
+  const zip = new AdmZip(vsixPath);
+  const entries = zip.getEntries();
+
+  // Find package.json inside extension/ folder
+  const pkgEntry = entries.find(e => e.entryName.match(/^extension\/package\.json$/));
+  if (!pkgEntry) return { success: false, error: 'Invalid VSIX: no package.json found' };
+
+  const pkg = JSON.parse(pkgEntry.getData().toString('utf-8'));
+  const extId = `${pkg.publisher || 'unknown'}.${pkg.name || 'extension'}`;
+  const destDir = path.join(getExtensionsDir(), extId);
+
+  // Extract extension/ contents to dest
+  if (fs.existsSync(destDir)) fs.rmSync(destDir, { recursive: true });
+  fs.mkdirSync(destDir, { recursive: true });
+
+  for (const entry of entries) {
+    if (entry.entryName.startsWith('extension/') && !entry.isDirectory) {
+      const relPath = entry.entryName.replace(/^extension\//, '');
+      const filePath = path.join(destDir, relPath);
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, entry.getData());
+    }
+  }
+
+  return { success: true, id: extId, name: pkg.displayName || pkg.name };
+});
+
+ipcMain.handle('uninstall-extension', async (_e, extId) => {
+  const extPath = path.join(getExtensionsDir(), extId);
+  if (fs.existsSync(extPath)) {
+    fs.rmSync(extPath, { recursive: true });
+    return { success: true };
+  }
+  return { success: false, error: 'Extension not found' };
+});
+
+ipcMain.handle('browse-vsix', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [{ name: 'VS Code Extensions', extensions: ['vsix'] }],
+  });
+  if (result.canceled || !result.filePaths.length) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle('open-extensions-dir', () => {
+  shell.openPath(getExtensionsDir());
+});
+
+// Import extension from a directory (e.g., from VS Code extensions folder)
+ipcMain.handle('install-extension-from-dir', async (_e, srcDir) => {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(srcDir, 'package.json'), 'utf-8'));
+    const extId = path.basename(srcDir);
+    const destDir = path.join(getExtensionsDir(), extId);
+
+    if (fs.existsSync(destDir)) fs.rmSync(destDir, { recursive: true });
+
+    // Recursive copy
+    const copyDir = (src, dest) => {
+      fs.mkdirSync(dest, { recursive: true });
+      for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+        const srcPath = path.join(src, entry.name);
+        const destPath = path.join(dest, entry.name);
+        if (entry.isDirectory()) copyDir(srcPath, destPath);
+        else fs.copyFileSync(srcPath, destPath);
+      }
+    };
+    copyDir(srcDir, destDir);
+
+    return { success: true, id: extId, name: pkg.displayName || pkg.name || extId };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+// List VS Code extensions available for import
+ipcMain.handle('list-vscode-extensions', () => {
+  const results = [];
+  const vscodeDirs = [
+    path.join(app.getPath('home'), '.vscode', 'extensions'),
+    path.join(app.getPath('home'), '.cursor', 'extensions'),
+    path.join(app.getPath('home'), '.vscode-insiders', 'extensions'),
+  ];
+  const installedDir = getExtensionsDir();
+  const installed = new Set();
+  try {
+    fs.readdirSync(installedDir).forEach(d => installed.add(d));
+  } catch {}
+
+  for (const extRoot of vscodeDirs) {
+    if (!fs.existsSync(extRoot)) continue;
+    const source = extRoot.includes('.cursor') ? 'Cursor' : extRoot.includes('insiders') ? 'VS Code Insiders' : 'VS Code';
+    try {
+      const dirs = fs.readdirSync(extRoot).filter(d => {
+        try { return fs.statSync(path.join(extRoot, d)).isDirectory(); } catch { return false; }
+      });
+      for (const dir of dirs) {
+        try {
+          const pkg = JSON.parse(fs.readFileSync(path.join(extRoot, dir, 'package.json'), 'utf-8'));
+          results.push({
+            id: dir,
+            name: pkg.displayName || pkg.name || dir,
+            version: pkg.version || '0.0.0',
+            description: pkg.description || '',
+            publisher: pkg.publisher || 'Unknown',
+            source,
+            path: path.join(extRoot, dir),
+            installed: installed.has(dir),
+          });
+        } catch { /* skip */ }
+      }
+    } catch { /* skip */ }
+  }
+  return results;
+});
+
+// ── IPC: Extension Host ──────────────────────────────────────────
+ipcMain.handle('activate-extension', async (_e, extId) => {
+  if (!extensionHost) return { success: false, error: 'Extension host not ready' };
+  const extDir = path.join(getExtensionsDir(), extId);
+  if (!fs.existsSync(extDir)) return { success: false, error: 'Extension not installed' };
+  return extensionHost.activate(extDir, extId);
+});
+
+ipcMain.handle('deactivate-extension', async (_e, extId) => {
+  if (!extensionHost) return { success: false, error: 'Extension host not ready' };
+  return extensionHost.deactivate(extId);
+});
+
+ipcMain.handle('resolve-extension-webview', async (_e, extId, viewId) => {
+  if (!extensionHost) return { success: false, error: 'Extension host not ready' };
+  return extensionHost.resolveWebviewView(extId, viewId);
+});
+
+ipcMain.handle('extension-webview-msg', (_e, extId, viewId, message) => {
+  if (!extensionHost) return;
+  extensionHost.forwardMessageToExtension(extId, viewId, message);
+});
+
+ipcMain.handle('execute-extension-command', async (_e, extId, commandId, ...args) => {
+  if (!extensionHost) return;
+  return extensionHost.executeCommand(extId, commandId, ...args);
+});
+
+ipcMain.handle('get-extension-config-schema', (_e, extId) => {
+  if (!extensionHost) return null;
+  return extensionHost.getConfigSchema(extId);
+});
+
+ipcMain.handle('update-extension-config', (_e, extId, section, key, value) => {
+  if (!extensionHost) return;
+  extensionHost.updateConfig(extId, section, key, value);
+});
+
+ipcMain.handle('set-extension-workspace', (_e, projectPath) => {
+  if (!extensionHost) return;
+  extensionHost.setWorkspace(projectPath);
+});
+
+ipcMain.handle('re-resolve-extension-webview', async (_e, extId, viewId) => {
+  if (!extensionHost) return { success: false, error: 'No extension host' };
+  return extensionHost.reResolveWebviewView(extId, viewId);
+});
+
+ipcMain.handle('get-extension-detail', (_e, extId) => {
+  const extDir = path.join(getExtensionsDir(), extId);
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(extDir, 'package.json'), 'utf-8'));
+    const iconPath = pkg.icon ? path.join(extDir, pkg.icon) : null;
+    let resolvedIcon = iconPath && fs.existsSync(iconPath) ? iconPath : null;
+    if (!resolvedIcon) {
+      const candidates = ['resources/claude-logo.svg', 'resources/icon.png', 'icon.png', 'icon.svg'];
+      for (const c of candidates) {
+        const p = path.join(extDir, c);
+        if (fs.existsSync(p)) { resolvedIcon = p; break; }
+      }
+    }
+    const contributes = pkg.contributes || {};
+    const config = contributes.configuration;
+    const configProps = config ? (Array.isArray(config) ? config[0] : config)?.properties || {} : {};
+    return {
+      id: extId,
+      name: pkg.displayName || pkg.name || extId,
+      version: pkg.version || '0.0.0',
+      description: pkg.description || '',
+      publisher: pkg.publisher || 'Unknown',
+      icon: resolvedIcon,
+      main: pkg.main,
+      hasWebview: !!(contributes.views || contributes.viewsContainers),
+      commands: (contributes.commands || []).map(c => ({ id: c.command, title: c.title })),
+      configProperties: Object.entries(configProps).map(([key, schema]) => ({
+        key, type: schema.type, default: schema.default, description: schema.description || schema.markdownDescription || '',
+        enum: schema.enum, enumDescriptions: schema.enumDescriptions,
+      })),
+      keybindings: contributes.keybindings || [],
+      viewIds: Object.values(contributes.views || {}).flat().map(v => v.id),
+      activationEvents: pkg.activationEvents || [],
+    };
+  } catch (e) {
+    return null;
+  }
+});
+
+// ── Project Context Files (.skillbox/project/context/) ──────────
+
+const CONTEXT_DIR = '.skillbox/project/context';
+const CONTEXT_FILES = ['context.md', 'stack.md', 'services.md', 'dependencies.md', 'environment.md', 'team.md', 'scripts.md', 'testing.md'];
+
+function parseContextFile(content) {
+  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!match) return { frontmatter: {}, body: content };
+  const fm = {};
+  match[1].split('\n').forEach(line => {
+    const idx = line.indexOf(':');
+    if (idx > 0) {
+      const key = line.slice(0, idx).trim();
+      let val = line.slice(idx + 1).trim();
+      // Simple YAML: strings, arrays (inline [...]), booleans, numbers
+      if (val === 'true') val = true;
+      else if (val === 'false') val = false;
+      else if (/^\d+$/.test(val)) val = parseInt(val, 10);
+      else if (val.startsWith('[') && val.endsWith(']')) {
+        val = val.slice(1, -1).split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+      } else {
+        val = val.replace(/^['"]|['"]$/g, '');
+      }
+      fm[key] = val;
+    }
+  });
+  return { frontmatter: fm, body: match[2].trim() };
+}
+
+function buildContextFile(frontmatter, body) {
+  let yaml = '---\n';
+  for (const [k, v] of Object.entries(frontmatter)) {
+    if (Array.isArray(v)) {
+      yaml += `${k}: [${v.map(s => `"${s}"`).join(', ')}]\n`;
+    } else {
+      yaml += `${k}: ${v}\n`;
+    }
+  }
+  yaml += '---\n\n';
+  return yaml + body + '\n';
+}
+
+function getContextDir(projectPath) {
+  return path.join(projectPath, CONTEXT_DIR);
+}
+
+ipcMain.handle('get-project-context', (_e, projectPath) => {
+  const ctxDir = getContextDir(projectPath);
+  if (!fs.existsSync(ctxDir)) return { initialized: false, files: {} };
+  const result = { initialized: true, files: {} };
+  for (const fname of CONTEXT_FILES) {
+    const fp = path.join(ctxDir, fname);
+    if (fs.existsSync(fp)) {
+      const raw = fs.readFileSync(fp, 'utf8');
+      result.files[fname] = { raw, ...parseContextFile(raw) };
+    }
+  }
+  return result;
+});
+
+ipcMain.handle('save-context-file', (_e, projectPath, fileName, content) => {
+  const ctxDir = getContextDir(projectPath);
+  if (!fs.existsSync(ctxDir)) fs.mkdirSync(ctxDir, { recursive: true });
+  fs.writeFileSync(path.join(ctxDir, fileName), content, 'utf8');
+  return { success: true };
+});
+
+ipcMain.handle('init-project-context', async (_e, projectPath) => {
+  const ctxDir = getContextDir(projectPath);
+  fs.mkdirSync(ctxDir, { recursive: true });
+
+  // Get existing analysis data
+  const row = dbGet('SELECT * FROM projects WHERE path = ?', [projectPath]);
+  const project = row ? projectRowToObj(row) : null;
+  const analysis = project?.analysis || {};
+  const projectName = project?.name || path.basename(projectPath);
+
+  const now = new Date().toISOString();
+
+  // ── context.md (main hub) ──
+  const contextBody = `# ${projectName}
+
+## Overview
+Project located at \`${projectPath}\`
+
+## Quick Links
+- [Stack](stack.md) - Technology stack
+- [Services](services.md) - Infrastructure services
+- [Dependencies](dependencies.md) - Libraries and packages
+- [Environment](environment.md) - Environment variable descriptions
+- [Team](team.md) - Team members and roles
+- [Scripts](scripts.md) - Available commands
+- [Testing](testing.md) - Test configuration
+
+## Notes
+_Add project notes here. Your AI assistant will update this file as it learns more about the project._`;
+
+  fs.writeFileSync(path.join(ctxDir, 'context.md'), buildContextFile({
+    version: '1.0',
+    project: projectName,
+    updated_at: now,
+    files: CONTEXT_FILES.filter(f => f !== 'context.md'),
+  }, contextBody));
+
+  // ── stack.md ──
+  const stackItems = (analysis.stack || []).map(s => `- **${s.name}**`).join('\n') || '_Run analysis to detect stack_';
+  fs.writeFileSync(path.join(ctxDir, 'stack.md'), buildContextFile({
+    type: 'stack',
+    updated_at: now,
+    auto_detected: true,
+  }, `# Tech Stack\n\n${stackItems}`));
+
+  // ── services.md ──
+  const svcItems = (analysis.services || []).map(s =>
+    `### ${s.name}\n- **Type:** ${s.type}\n- **Source:** ${s.source || 'unknown'}`
+  ).join('\n\n') || '_No services detected_';
+  fs.writeFileSync(path.join(ctxDir, 'services.md'), buildContextFile({
+    type: 'services',
+    updated_at: now,
+  }, `# Services\n\n${svcItems}`));
+
+  // ── dependencies.md ──
+  let depBody = '# Dependencies\n\n';
+  for (const [mgr, list] of Object.entries(analysis.dependencies || {})) {
+    if (!list?.length) continue;
+    const label = { npm: 'npm', python: 'pip', ruby: 'gem', java: 'maven' }[mgr] || mgr;
+    depBody += `## ${label}\n\n| Package | Version |\n|---------|--------|\n`;
+    list.forEach(d => { depBody += `| ${d.name} | ${d.version || 'latest'} |\n`; });
+    depBody += '\n';
+  }
+  if (!Object.values(analysis.dependencies || {}).some(l => l?.length)) depBody += '_Run analysis to detect dependencies_\n';
+  fs.writeFileSync(path.join(ctxDir, 'dependencies.md'), buildContextFile({
+    type: 'dependencies',
+    updated_at: now,
+  }, depBody));
+
+  // ── environment.md (names + descriptions only, NO actual values) ──
+  const envData = project?.environments || {};
+  const allEnvKeys = new Set();
+  Object.values(envData).forEach(vars => Object.keys(vars).forEach(k => allEnvKeys.add(k)));
+  let envBody = '# Environment Variables\n\n';
+  envBody += '> This file describes environment variables. It does NOT contain actual values or secrets.\n\n';
+  if (allEnvKeys.size > 0) {
+    envBody += '| Variable | Description | Required |\n|----------|-------------|----------|\n';
+    for (const k of allEnvKeys) {
+      const sensitive = /secret|password|token|key|api_key|auth/i.test(k);
+      envBody += `| ${k} | ${sensitive ? 'Sensitive credential' : '_describe purpose_'} | yes |\n`;
+    }
+  } else {
+    envBody += '_No environment variables configured yet_\n';
+  }
+  fs.writeFileSync(path.join(ctxDir, 'environment.md'), buildContextFile({
+    type: 'environment',
+    updated_at: now,
+    env_files: ['.env', '.env.local'],
+  }, envBody));
+
+  // ── team.md ──
+  const allTeams = loadTeams();
+  const projectTeams = allTeams.filter(t => {
+    const assigned = typeof t.projects === 'string' ? JSON.parse(t.projects || '[]') : (t.projects || []);
+    return assigned.includes(projectPath);
+  });
+  let teamBody = '# Team\n\n';
+  if (projectTeams.length) {
+    projectTeams.forEach(t => {
+      const members = typeof t.members === 'string' ? JSON.parse(t.members || '[]') : (t.members || []);
+      teamBody += `## ${t.name}\n\n`;
+      if (members.length) {
+        teamBody += '| Name | Role |\n|------|------|\n';
+        members.forEach(m => { teamBody += `| ${m.name} | ${m.role || ''} |\n`; });
+      }
+      teamBody += '\n';
+    });
+  } else {
+    teamBody += '_No team assigned_\n';
+  }
+  fs.writeFileSync(path.join(ctxDir, 'team.md'), buildContextFile({
+    type: 'team',
+    updated_at: now,
+  }, teamBody));
+
+  // ── scripts.md ──
+  const scripts = analysis.scripts || {};
+  let scriptBody = '# Scripts\n\n';
+  const scriptEntries = Object.entries(scripts);
+  if (scriptEntries.length) {
+    scriptBody += '| Command | Script | Description |\n|---------|--------|-------------|\n';
+    scriptEntries.forEach(([name, cmd]) => {
+      scriptBody += `| \`npm run ${name}\` | \`${cmd}\` | _describe_ |\n`;
+    });
+  } else {
+    scriptBody += '_No scripts detected_\n';
+  }
+  fs.writeFileSync(path.join(ctxDir, 'scripts.md'), buildContextFile({
+    type: 'scripts',
+    updated_at: now,
+  }, scriptBody));
+
+  // ── testing.md ──
+  let testBody = '# Testing\n\n';
+  testBody += '_Run test detection to populate this section_\n';
+  fs.writeFileSync(path.join(ctxDir, 'testing.md'), buildContextFile({
+    type: 'testing',
+    updated_at: now,
+  }, testBody));
+
+  // Add .skillbox to .gitignore if not already there (env vars are in DB, not in these files)
+  // Actually, context files SHOULD be committed — they're the project brain. No secrets.
+  addHistory('context_initialized', `Project context files created in .skillbox/project/context/`, projectPath);
+
+  return { success: true, path: ctxDir };
+});
+
+ipcMain.handle('get-context-file-path', (_e, projectPath, fileName) => {
+  return path.join(getContextDir(projectPath), fileName);
+});
+
+// ── Git Info ─────────────────────────────────────────────────────
+
+ipcMain.handle('get-git-info', (_e, projectPath) => {
+  const run = (cmd) => {
+    try {
+      return execSync(cmd, { cwd: projectPath, encoding: 'utf-8', timeout: 10000 }).trim();
+    } catch { return ''; }
+  };
+
+  try {
+    const branch = run('git rev-parse --abbrev-ref HEAD');
+    if (!branch) return { error: 'Not a git repository' };
+
+    const localBranches = run('git branch --format="%(refname:short)"').split('\n').filter(Boolean);
+    const remoteBranches = run('git branch -r --format="%(refname:short)"').split('\n').filter(Boolean);
+
+    const logRaw = run('git log -20 --format="%H|%an|%aI|%s" --shortstat');
+    const commits = [];
+    const lines = logRaw.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.includes('|')) {
+        const [hash, author, date, ...msgParts] = line.split('|');
+        const message = msgParts.join('|');
+        let insertions = 0, deletions = 0;
+        const statLine = lines[i + 1] || '';
+        const insMatch = statLine.match(/(\d+) insertion/);
+        const delMatch = statLine.match(/(\d+) deletion/);
+        if (insMatch) insertions = parseInt(insMatch[1], 10);
+        if (delMatch) deletions = parseInt(delMatch[1], 10);
+        if (insMatch || delMatch) i++;
+        commits.push({ hash, author, date, message, insertions, deletions });
+      }
+    }
+
+    const totalCommits = parseInt(run('git rev-list --count HEAD') || '0', 10);
+    const remoteUrl = run('git remote get-url origin');
+
+    return {
+      branch,
+      branches: { local: localBranches, remote: remoteBranches },
+      commits,
+      totalCommits,
+      remoteUrl,
+    };
+  } catch (e) {
+    return { error: e.message };
+  }
+});
+
+// ── Project Ports ────────────────────────────────────────────────
+
+ipcMain.handle('get-project-ports', (_e, projectPath) => {
+  const result = { dockerPorts: [], serviceUrls: {} };
+
+  try {
+    const composePath = ['docker-compose.yml', 'docker-compose.yaml', 'compose.yml', 'compose.yaml']
+      .map(f => path.join(projectPath, f))
+      .find(f => fs.existsSync(f));
+
+    if (composePath) {
+      const content = fs.readFileSync(composePath, 'utf-8');
+      const portMatches = content.matchAll(/ports:\s*\n((?:\s+-\s*.+\n?)+)/g);
+      for (const match of portMatches) {
+        const block = match[1];
+        const mappings = block.matchAll(/["']?(\d+):(\d+)["']?/g);
+        for (const m of mappings) {
+          result.dockerPorts.push({ host: parseInt(m[1], 10), container: parseInt(m[2], 10) });
+        }
+      }
+    }
+  } catch { /* ignore */ }
+
+  try {
+    const envPath = path.join(projectPath, '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf-8');
+      const urlKeys = ['DATABASE_URL', 'REDIS_URL', 'MONGO_URL', 'MONGODB_URI', 'POSTGRES_URL', 'MYSQL_URL', 'AMQP_URL', 'RABBITMQ_URL', 'ELASTICSEARCH_URL'];
+      for (const line of envContent.split('\n')) {
+        const eqIdx = line.indexOf('=');
+        if (eqIdx === -1) continue;
+        const key = line.slice(0, eqIdx).trim();
+        const val = line.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+        if (urlKeys.includes(key) && val) {
+          result.serviceUrls[key] = val;
+        }
+      }
+    }
+  } catch { /* ignore */ }
+
+  return result;
+});
+
+// ── Test Detection ───────────────────────────────────────────────
+
+ipcMain.handle('detect-tests', (_e, projectPath) => {
+  const result = { frameworks: [], testFileCount: 0, hasTestScript: false };
+
+  const exists = (f) => fs.existsSync(path.join(projectPath, f));
+
+  // Package.json checks
+  let pkg = null;
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf-8'));
+  } catch { /* no package.json */ }
+
+  if (pkg) {
+    const scripts = pkg.scripts || {};
+    result.hasTestScript = !!scripts.test && scripts.test !== 'echo "Error: no test specified" && exit 1';
+    const devDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+    if (devDeps.jest || exists('jest.config.js') || exists('jest.config.ts')) result.frameworks.push('jest');
+    if (devDeps.mocha || exists('.mocharc.yml') || exists('.mocharc.json')) result.frameworks.push('mocha');
+    if (devDeps.cypress || exists('cypress.config.js') || exists('cypress.config.ts')) result.frameworks.push('cypress');
+    if (devDeps['@playwright/test'] || exists('playwright.config.js') || exists('playwright.config.ts')) result.frameworks.push('playwright');
+    if (devDeps.vitest || exists('vitest.config.js') || exists('vitest.config.ts')) result.frameworks.push('vitest');
+  }
+
+  // Python
+  if (exists('pytest.ini') || exists('pyproject.toml') || exists('setup.cfg')) {
+    try {
+      const pyproject = exists('pyproject.toml') ? fs.readFileSync(path.join(projectPath, 'pyproject.toml'), 'utf-8') : '';
+      if (pyproject.includes('pytest') || exists('pytest.ini')) result.frameworks.push('pytest');
+    } catch { /* ignore */ }
+  }
+
+  // Ruby
+  if (exists('Gemfile')) {
+    try {
+      const gemfile = fs.readFileSync(path.join(projectPath, 'Gemfile'), 'utf-8');
+      if (gemfile.includes('rspec')) result.frameworks.push('rspec');
+    } catch { /* ignore */ }
+  }
+
+  // Go
+  if (exists('go.mod')) result.frameworks.push('go test');
+
+  // Rust
+  if (exists('Cargo.toml')) result.frameworks.push('cargo test');
+
+  // Count test files
+  try {
+    const count = execSync(
+      'find . -maxdepth 5 \\( -name "*.test.*" -o -name "*.spec.*" -o -name "test_*.py" -o -name "*_test.go" -o -name "*_test.rb" \\) -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" | wc -l',
+      { cwd: projectPath, encoding: 'utf-8', timeout: 10000 }
+    ).trim();
+    result.testFileCount = parseInt(count, 10) || 0;
+  } catch { /* ignore */ }
+
+  return result;
 });

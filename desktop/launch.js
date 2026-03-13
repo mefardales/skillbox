@@ -32,10 +32,13 @@ const electronBin = findElectron();
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
 delete env.ELECTRON_NO_ATTACH_CONSOLE;
+// Prevent Claude Code nested-session detection when running inside Claude Code
+delete env.CLAUDECODE;
 
 // ── Launch ────────────────────────────────────────────────────
 const args = ['.'];
 if (process.argv.includes('--dev')) args.push('--dev');
+if (process.argv.includes('--vite')) args.push('--vite');
 
 const child = spawn(electronBin, args, {
   cwd: __dirname,

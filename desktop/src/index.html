@@ -1,14 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="blue" data-gray="slate" data-mode="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src https://api.github.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' blob:; worker-src 'self' blob:; img-src 'self' data: https://avatars.githubusercontent.com; connect-src https://api.github.com;">
   <title>Skillbox</title>
+  <!-- App styles (Radix UI design system) -->
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="../node_modules/xterm/css/xterm.css">
   <script src="../node_modules/xterm/lib/xterm.js"></script>
   <script src="../node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+  <script>
+    // Save node globals before Monaco's AMD loader overwrites them
+    var _nodeRequire = typeof require !== 'undefined' ? require : undefined;
+    var _nodeModule = typeof module !== 'undefined' ? module : undefined;
+    var _nodeExports = typeof exports !== 'undefined' ? exports : undefined;
+    if (typeof module !== 'undefined') { module = undefined; }
+    if (typeof exports !== 'undefined') { exports = undefined; }
+  </script>
+  <script src="../node_modules/monaco-editor/min/vs/loader.js"></script>
 </head>
 <body>
 
@@ -27,12 +37,7 @@
       </div>
 
       <nav class="activity-bar-nav">
-        <button class="activity-bar-item active" data-view="dashboard" title="Workspace">
-          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
-            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
-          </svg>
-        </button>
-        <button class="activity-bar-item" data-panel="projects" title="Projects">
+        <button class="activity-bar-item active" data-panel="projects" title="Projects">
           <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
             <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
           </svg>
@@ -60,11 +65,7 @@
             <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.605-.015 2.895-.015 3.3 0 .267.18.578.688.48C17.138 18.163 20 14.418 20 10c0-5.523-4.477-10-10-10z" clip-rule="evenodd"/>
           </svg>
         </button>
-        <button class="activity-bar-item" data-view="history" title="History">
-          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-          </svg>
-        </button>
+        <!-- History removed -->
       </nav>
 
       <div class="activity-bar-bottom">
@@ -78,6 +79,16 @@
             <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm1 0v12h8V4H4zm10 0v12h2V4h-2z" clip-rule="evenodd"/>
           </svg>
         </button>
+        <button class="activity-bar-item" data-view="extensions" title="Extensions">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h1.5a1 1 0 011 1v1.5a1.5 1.5 0 010 3H15a1 1 0 00-1 1V13a1 1 0 01-1 1h-1.5a1.5 1.5 0 01-3 0V13a1 1 0 00-1-1H6a1 1 0 01-1-1v-1.5a1.5 1.5 0 010-3H6a1 1 0 001-1V5a1 1 0 011-1h1.5a1 1 0 001-1v-.5z"/>
+          </svg>
+        </button>
+        <button class="activity-bar-item" data-view="settings" title="Settings (Ctrl+,)">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+          </svg>
+        </button>
         <button class="activity-bar-item" id="btnAddProject" title="Add Project">
           <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
             <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
@@ -86,33 +97,30 @@
       </div>
     </aside>
 
-    <!-- ─── Project Sidebar (Codex-style threads) ─── -->
+    <!-- ─── Project Sidebar (VS Code Explorer) ─── -->
     <aside class="project-sidebar" id="projectSidebar">
       <div class="psb-header">
-        <span class="psb-title">Projects</span>
+        <span class="psb-title">EXPLORER</span>
         <button class="btn-icon" id="btnAddProjectSidebar" title="Add Project">
           <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z" clip-rule="evenodd"/></svg>
         </button>
       </div>
-      <div class="psb-search">
-        <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12" class="psb-search-icon"><path fill-rule="evenodd" d="M6 2a4 4 0 100 8 4 4 0 000-8zM0 6a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 010 6z" clip-rule="evenodd"/></svg>
-        <input type="text" id="projectSidebarSearch" placeholder="Filter projects..." autocomplete="off" spellcheck="false">
-      </div>
-      <div class="psb-list" id="projectSidebarList">
-        <div class="psb-empty">No projects yet</div>
-      </div>
+      <div class="psb-explorer" id="projectSidebarList"></div>
     </aside>
+
+    <!-- ─── Resize Handle: Sidebar ↔ Main ─── -->
+    <div class="resize-handle resize-handle-h" id="resizeSidebar"></div>
 
     <!-- ─── Main Workspace ─── -->
     <div class="main-area">
       <main class="main-content" id="mainContent">
         <div class="main-titlebar"></div>
 
-        <!-- ─── VIEW: Dashboard ─── -->
-        <div class="view" id="viewDashboard">
+        <!-- ─── VIEW: Dashboard (hidden) ─── -->
+        <div class="view" id="viewDashboard" style="display:none">
           <div class="view-header">
             <div class="view-header-left">
-              <h1 class="view-title">Workspace</h1>
+              <h1 class="view-title">Dashboard</h1>
               <span class="view-subtitle" id="dashboardSubtitle"></span>
             </div>
           </div>
@@ -148,7 +156,7 @@
                 <div class="dash-card">
                   <div class="dash-card-header">
                     <h3>Recent Projects</h3>
-                    <button class="btn-ghost btn-sm" id="dashBtnAddProject">+ Add</button>
+                    <button class="sb-btn-ghost sb-btn-sm" id="dashBtnAddProject">+ Add</button>
                   </div>
                   <div class="dash-card-body" id="dashRecentProjects">
                     <div class="dash-empty"><p>No projects yet. Add a project folder to get started.</p></div>
@@ -157,7 +165,7 @@
                 <div class="dash-card">
                   <div class="dash-card-header">
                     <h3>Open Tasks</h3>
-                    <button class="btn-ghost btn-sm" id="dashBtnViewTasks">View All</button>
+                    <button class="sb-btn-ghost sb-btn-sm" id="dashBtnViewTasks">View All</button>
                   </div>
                   <div class="dash-card-body" id="dashOpenTasks">
                     <div class="dash-empty"><p>No open tasks.</p></div>
@@ -184,7 +192,7 @@
               <span class="view-subtitle" id="projectsSubtitle">Manage your project folders</span>
             </div>
             <div class="view-header-right">
-              <button class="btn-primary" id="btnAddProjectMain">
+              <button class="sb-btn-primary" id="btnAddProjectMain">
                 <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
                 Add Project
               </button>
@@ -196,7 +204,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
               </svg>
               <p>No projects added yet</p>
-              <button class="btn-primary" id="btnAddProjectEmpty">Add your first project</button>
+              <button class="sb-btn-primary" id="btnAddProjectEmpty">Add your first project</button>
             </div>
           </div>
         </div>
@@ -212,44 +220,15 @@
               <select class="select-input" id="taskProjectFilter">
                 <option value="">All projects</option>
               </select>
-              <button class="btn-primary" id="btnCreateTask">
+              <button class="sb-btn-primary" id="btnCreateTask">
                 <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
                 New Task
               </button>
             </div>
           </div>
-          <div class="kanban-board" id="kanbanBoard">
-            <div class="kanban-column" data-status="todo">
-              <div class="kanban-column-header">
-                <span class="kanban-column-dot" style="background:#94a3b8"></span>
-                <span class="kanban-column-title">To Do</span>
-                <span class="kanban-column-count" id="countTodo">0</span>
-              </div>
-              <div class="kanban-column-body" id="kanbanTodo"></div>
-            </div>
-            <div class="kanban-column" data-status="in_progress">
-              <div class="kanban-column-header">
-                <span class="kanban-column-dot" style="background:#3b82f6"></span>
-                <span class="kanban-column-title">In Progress</span>
-                <span class="kanban-column-count" id="countInProgress">0</span>
-              </div>
-              <div class="kanban-column-body" id="kanbanInProgress"></div>
-            </div>
-            <div class="kanban-column" data-status="review">
-              <div class="kanban-column-header">
-                <span class="kanban-column-dot" style="background:#f59e0b"></span>
-                <span class="kanban-column-title">In Review</span>
-                <span class="kanban-column-count" id="countReview">0</span>
-              </div>
-              <div class="kanban-column-body" id="kanbanReview"></div>
-            </div>
-            <div class="kanban-column" data-status="done">
-              <div class="kanban-column-header">
-                <span class="kanban-column-dot" style="background:#22c55e"></span>
-                <span class="kanban-column-title">Done</span>
-                <span class="kanban-column-count" id="countDone">0</span>
-              </div>
-              <div class="kanban-column-body" id="kanbanDone"></div>
+          <div class="task-list" id="taskList">
+            <div class="task-list-empty" id="taskListEmpty" style="display:none">
+              <p>No tasks yet. Create one to get started.</p>
             </div>
           </div>
         </div>
@@ -262,7 +241,7 @@
               <span class="view-subtitle" id="teamsSubtitle">Your collaborators and roles</span>
             </div>
             <div class="view-header-right">
-              <button class="btn-primary" id="btnCreateTeam">
+              <button class="sb-btn-primary" id="btnCreateTeam">
                 <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
                 New Team
               </button>
@@ -275,7 +254,7 @@
               </svg>
               <p>No teams yet</p>
               <span class="empty-hint">Create teams to organize your collaborators</span>
-              <button class="btn-primary" id="btnCreateTeamEmpty">Create your first team</button>
+              <button class="sb-btn-primary" id="btnCreateTeamEmpty">Create your first team</button>
             </div>
           </div>
         </div>
@@ -288,11 +267,11 @@
               <span class="view-subtitle" id="skillsSubtitle">0 skills in 0 categories</span>
             </div>
             <div class="view-header-right">
-              <button class="btn-ghost btn-sm" id="btnImportGitSkill">
+              <button class="sb-btn-ghost sb-btn-sm" id="btnImportGitSkill">
                 <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
                 Import from Git
               </button>
-              <button class="btn-primary btn-sm" id="btnCreateSkill">
+              <button class="sb-btn-primary sb-btn-sm" id="btnCreateSkill">
                 <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
                 New Skill
               </button>
@@ -311,7 +290,7 @@
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
             <p>No skills match your search</p>
-            <button class="btn-ghost" onclick="clearSearch()">Clear search</button>
+            <button class="sb-btn-ghost" onclick="clearSearch()">Clear search</button>
           </div>
         </div>
 
@@ -331,7 +310,7 @@
             <p class="github-connect-desc">Link your GitHub account to browse repos, clone projects, and import skills.</p>
             <div class="github-token-form">
               <input type="password" class="form-input" id="githubTokenInput" placeholder="Paste your GitHub Personal Access Token">
-              <button class="btn-primary" id="btnGithubConnect">Connect</button>
+              <button class="sb-btn-primary" id="btnGithubConnect">Connect</button>
             </div>
             <p class="github-token-hint">Generate a token at GitHub Settings > Developer settings > Personal access tokens</p>
           </div>
@@ -342,7 +321,7 @@
                 <span class="github-username" id="githubUsername"></span>
                 <span class="github-status-text">Connected</span>
               </div>
-              <button class="btn-ghost btn-sm btn-danger" id="btnGithubDisconnect">Disconnect</button>
+              <button class="sb-btn-ghost sb-btn-sm btn-danger" id="btnGithubDisconnect">Disconnect</button>
             </div>
             <div class="github-repos-section">
               <div class="view-header" style="margin-top:20px">
@@ -387,71 +366,218 @@
           </div>
         </div>
 
+        <!-- ─── VIEW: Settings ─── -->
+        <div class="view" id="viewSettings" style="display:none">
+          <div class="view-header">
+            <div class="view-header-left">
+              <h1 class="view-title">Settings</h1>
+              <span class="view-subtitle">Edit settings in JSON format</span>
+            </div>
+            <div class="view-header-actions">
+              <button class="sb-btn-ghost" id="btnOpenSettingsFile" title="Open settings file">Open File</button>
+              <button class="sb-btn-ghost" id="btnResetSettings" title="Reset to defaults">Reset</button>
+              <button class="sb-btn-primary" id="btnSaveSettings" title="Save (Ctrl+S)">Save</button>
+            </div>
+          </div>
+          <!-- Theme Selector -->
+          <div class="settings-theme-bar" id="themeSelector">
+            <div class="settings-theme-row">
+              <span class="settings-theme-label">Appearance</span>
+              <select class="settings-theme-select" id="themeModeSelect">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+            <div class="settings-theme-row">
+              <span class="settings-theme-label">Accent</span>
+              <div class="settings-accent-picker" id="accentPicker">
+                <button class="accent-swatch active" data-accent="blue" style="--sw:#0090ff" title="Blue"></button>
+                <button class="accent-swatch" data-accent="indigo" style="--sw:#3e63dd" title="Indigo"></button>
+                <button class="accent-swatch" data-accent="iris" style="--sw:#5b5bd6" title="Iris"></button>
+                <button class="accent-swatch" data-accent="cyan" style="--sw:#00a2c7" title="Cyan"></button>
+                <button class="accent-swatch" data-accent="teal" style="--sw:#12a594" title="Teal"></button>
+                <button class="accent-swatch" data-accent="green" style="--sw:#30a46c" title="Green"></button>
+                <button class="accent-swatch" data-accent="orange" style="--sw:#f76b15" title="Orange"></button>
+                <button class="accent-swatch" data-accent="red" style="--sw:#e5484d" title="Red"></button>
+                <button class="accent-swatch" data-accent="crimson" style="--sw:#e93d82" title="Crimson"></button>
+                <button class="accent-swatch" data-accent="pink" style="--sw:#d6409f" title="Pink"></button>
+                <button class="accent-swatch" data-accent="amber" style="--sw:#ffc53d" title="Amber"></button>
+              </div>
+            </div>
+            <div class="settings-theme-row">
+              <span class="settings-theme-label">Gray</span>
+              <select class="settings-theme-select" id="themeGraySelect">
+                <option value="slate">Slate</option>
+                <option value="mauve">Mauve</option>
+                <option value="sage">Sage</option>
+                <option value="olive">Olive</option>
+                <option value="sand">Sand</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-layout">
+            <div class="settings-sidebar">
+              <button class="settings-cat active" data-cat="all">All Settings</button>
+              <button class="settings-cat" data-cat="editor">Editor</button>
+              <button class="settings-cat" data-cat="terminal">Terminal</button>
+              <button class="settings-cat" data-cat="workbench">Workbench</button>
+              <button class="settings-cat" data-cat="general">General</button>
+              <button class="settings-cat" data-cat="extensions">Extensions</button>
+            </div>
+            <div class="settings-editor">
+              <div class="settings-editor-header">
+                <span class="settings-editor-filename">settings.json</span>
+                <span class="settings-editor-modified" id="settingsModified" style="display:none">● Modified</span>
+              </div>
+              <textarea id="settingsJsonEditor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── VIEW: Extensions ─── -->
+        <div class="view" id="viewExtensions" style="display:none">
+          <div class="view-header">
+            <div class="view-header-left">
+              <h1 class="view-title">Extensions</h1>
+              <span class="view-subtitle" id="extensionsCount">0 installed</span>
+            </div>
+            <div class="view-header-actions">
+              <button class="sb-btn-ghost" id="btnOpenExtDir" title="Open extensions folder">Open Folder</button>
+              <button class="sb-btn-primary" id="btnInstallVsix" title="Install from .vsix file">Install VSIX</button>
+            </div>
+          </div>
+          <div class="ext-tabs">
+            <button class="ext-tab-btn active" data-tab="installed">Installed</button>
+            <button class="ext-tab-btn" data-tab="available">VS Code / Cursor</button>
+          </div>
+          <div class="extensions-search-bar">
+            <input type="text" id="extensionsSearch" placeholder="Search extensions..." class="input-search" />
+          </div>
+          <div class="extensions-list" id="extensionsList">
+            <div class="extensions-empty" id="extensionsEmpty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z"/>
+              </svg>
+              <p>No extensions installed</p>
+              <span class="empty-hint">Install VS Code compatible extensions (.vsix files)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── VIEW: Extension Detail ─── -->
+        <div class="view" id="viewExtensionDetail" style="display:none">
+          <div class="view-header">
+            <div class="view-header-left">
+              <button class="sb-btn-ghost sb-btn-xs" id="btnExtDetailBack" title="Back to Extensions">
+                <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 010 .708L5.707 8l5.647 5.646a.5.5 0 01-.708.708l-6-6a.5.5 0 010-.708l6-6a.5.5 0 01.708 0z"/></svg>
+              </button>
+              <h1 class="view-title" id="extDetailName">Extension</h1>
+              <span class="view-subtitle" id="extDetailVersion"></span>
+            </div>
+            <div class="view-header-actions">
+              <button class="sb-btn-primary" id="btnExtActivate" style="display:none">Activate</button>
+              <button class="sb-btn-ghost" id="btnExtDeactivate" style="display:none">Deactivate</button>
+              <button class="sb-btn-primary" id="btnExtOpenWebview" style="display:none">Open</button>
+            </div>
+          </div>
+          <div class="ext-detail-content" id="extDetailContent">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- ─── VIEW: Extension Webview ─── -->
+        <div class="view" id="viewExtensionWebview" style="display:none;flex-direction:column;">
+          <div class="ext-webview-container" id="extWebviewContainer" style="flex:1;display:flex;min-height:0;">
+            <!-- iframe inserted here -->
+          </div>
+        </div>
+
+        <!-- ─── VIEW: Monaco Editor ─── -->
+        <div class="view" id="viewEditor" style="display:none;">
+          <div class="editor-tabs-bar" id="editorTabsBar">
+            <!-- Tabs inserted dynamically -->
+          </div>
+          <div class="editor-container" id="editorContainer">
+            <!-- Monaco instance here -->
+          </div>
+        </div>
+
       </main>
 
-      <!-- ─── Bottom Terminal Panel ─── -->
+      <!-- ─── Bottom edge sash: drag up to reveal terminal ─── -->
+      <div class="terminal-edge-sash" id="terminalEdgeSash"></div>
+
+      <!-- ─── Bottom Terminal Panel (VS Code-style) ─── -->
       <div class="terminal-panel" id="terminalPanel" style="display:none">
         <div class="terminal-resize-handle" id="terminalResizeHandle"></div>
         <div class="terminal-panel-header" id="terminalPanelHeader">
-          <div class="terminal-tabs" id="terminalTabs"></div>
+          <div class="terminal-header-left">
+            <span class="terminal-panel-title">TERMINAL</span>
+          </div>
           <div class="terminal-toolbar-actions">
-            <button class="btn-ghost btn-xs" id="btnNewTerminal" title="New terminal">
-              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-            </button>
-            <button class="btn-ghost btn-xs" id="btnDuplicateTerminal" title="Duplicate">
-              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z"/><path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z"/></svg>
-            </button>
-            <button class="btn-ghost btn-xs btn-danger" id="btnKillTerminal" title="Kill">
-              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            <button class="terminal-name-selector" id="terminalNameSelector" title="Select Terminal">
+              <svg class="terminal-name-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M1 3.5A1.5 1.5 0 012.5 2h11A1.5 1.5 0 0115 3.5v9a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 011 12.5v-9zM3.293 5.293a1 1 0 011.414 0L6.5 7.086l-1.793 1.793a1 1 0 11-1.414-1.414L4.586 6.5 3.293 5.207a1 1 0 010-.914zM8 8a.75.75 0 000 1.5h2a.75.75 0 000-1.5H8z"/></svg>
+              <span class="terminal-name-text" id="terminalNameText">zsh</span>
+              <svg class="terminal-name-chevron" viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path d="M4.22 6.22a.75.75 0 011.06 0L8 8.94l2.72-2.72a.75.75 0 111.06 1.06l-3.25 3.25a.75.75 0 01-1.06 0L4.22 7.28a.75.75 0 010-1.06z"/></svg>
             </button>
             <div class="terminal-panel-divider"></div>
-            <button class="btn-ghost btn-xs" id="btnMaximizeTerminal" title="Maximize">
-              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 111.414 1.414L5.414 15H7a1 1 0 110 2H3a1 1 0 01-1-1v-4zm13.707 4.707a1 1 0 010-1.414L15.414 13H14a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0v-1.586l-2.293 2.293a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+            <button class="sb-btn-ghost sb-btn-xs" id="btnNewTerminal" title="New Terminal (Ctrl+Shift+`)">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z" clip-rule="evenodd"/></svg>
             </button>
-            <button class="btn-ghost btn-xs" id="btnCloseTerminalPanel" title="Close panel">
-              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" transform="rotate(180 10 10)"/></svg>
+            <button class="sb-btn-ghost sb-btn-xs" id="btnSplitTerminal" title="Split Terminal">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M14 1H2a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V2a1 1 0 00-1-1zM2 2h5.5v12H2V2zm6.5 12V2H14v12H8.5z"/></svg>
+            </button>
+            <button class="sb-btn-ghost sb-btn-xs" id="btnKillTerminal" title="Kill Terminal">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z"/><path d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 010-2H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118z"/></svg>
+            </button>
+            <div class="terminal-panel-divider"></div>
+            <button class="sb-btn-ghost sb-btn-xs" id="btnToggleTerminalSidebar" title="Toggle Sidebar">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M14 1H2a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V2a1 1 0 00-1-1zm-4 13H2V2h8v12zm1 0V2h3v12h-3z"/></svg>
+            </button>
+            <button class="sb-btn-ghost sb-btn-xs" id="btnMaximizeTerminal" title="Maximize Panel">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M8 4.6L13.4 10 12 11.4l-4-4-4 4L2.6 10 8 4.6z"/></svg>
+            </button>
+            <button class="sb-btn-ghost sb-btn-xs" id="btnCloseTerminalPanel" title="Close Panel">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M2.146 2.854a.5.5 0 11.708-.708L8 7.293l5.146-5.147a.5.5 0 01.708.708L8.707 8l5.147 5.146a.5.5 0 01-.708.708L8 8.707l-5.146 5.147a.5.5 0 01-.708-.708L7.293 8 2.146 2.854z"/></svg>
             </button>
           </div>
         </div>
-        <div class="terminal-container" id="terminalContainer"></div>
+        <div class="terminal-body">
+          <div class="terminal-panes" id="terminalContainer"></div>
+          <div class="terminal-sidebar-sash" id="terminalSidebarSash"></div>
+          <div class="terminal-sidebar" id="terminalSidebar">
+            <div class="terminal-sidebar-list" id="terminalSidebarList"></div>
+          </div>
+        </div>
       </div>
     </div><!-- /main-area -->
 
-    <!-- ─── Right Info Panel ─── -->
+    <!-- ─── Resize Handle: Main ↔ Right Panel ─── -->
+    <div class="resize-handle resize-handle-h" id="resizeRightPanel"></div>
+
+    <!-- ─── Right Info Panel (VS Code sidebar style) ─── -->
     <aside class="right-panel" id="rightPanel">
       <div class="rp-tabs">
-        <button class="rp-tab active" data-rp-tab="tasks">Tasks</button>
+        <button class="rp-tab active" data-rp-tab="context">Context</button>
+        <button class="rp-tab" data-rp-tab="tasks">Tasks</button>
         <button class="rp-tab" data-rp-tab="activity">Activity</button>
         <button class="rp-tab" data-rp-tab="info">Info</button>
       </div>
 
-      <!-- Tasks tab -->
-      <div class="rp-tab-content active" id="rpTasks">
-        <div class="rp-section-header">
-          <span>Open Tasks</span>
-          <button class="btn-icon" id="rpBtnNewTask" title="New Task">
-            <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z" clip-rule="evenodd"/></svg>
-          </button>
-        </div>
-        <div class="rp-task-list" id="rpTaskList">
-          <div class="rp-empty">No open tasks</div>
-        </div>
+      <div class="rp-tab-content active" id="rpContext">
+        <div id="rpContextContent"><div class="rp-empty">Select a project</div></div>
       </div>
 
-      <!-- Activity tab -->
+      <div class="rp-tab-content" id="rpTasks">
+        <div id="rpTasksContent"><div class="rp-empty">No open tasks</div></div>
+      </div>
+
       <div class="rp-tab-content" id="rpActivity">
-        <div class="rp-section-header"><span>Recent Activity</span></div>
-        <div class="rp-activity-list" id="rpActivityList">
-          <div class="rp-empty">No recent activity</div>
-        </div>
+        <div id="rpActivityContent"><div class="rp-empty">No recent activity</div></div>
       </div>
 
-      <!-- Info tab -->
       <div class="rp-tab-content" id="rpInfo">
-        <div class="rp-section-header"><span>Project Info</span></div>
-        <div class="rp-info-content" id="rpInfoContent">
-          <div class="rp-empty">Select a project to see details</div>
-        </div>
+        <div id="rpInfoContent"><div class="rp-empty">Select a project</div></div>
       </div>
     </aside>
 
@@ -479,10 +605,10 @@
       <div class="env-tabs" id="envTabs"></div>
       <div class="modal-body" id="envModalBody"></div>
       <div class="modal-footer">
-        <button class="btn-ghost" id="btnAddEnvVar">+ Add variable</button>
+        <button class="sb-btn-ghost" id="btnAddEnvVar">+ Add variable</button>
         <div class="modal-footer-right">
-          <button class="btn-ghost" id="btnImportEnv">Import .env</button>
-          <button class="btn-primary" id="btnSyncEnv">Sync to .env</button>
+          <button class="sb-btn-ghost" id="btnImportEnv">Import .env</button>
+          <button class="sb-btn-primary" id="btnSyncEnv">Sync to .env</button>
         </div>
       </div>
     </div>
@@ -511,12 +637,12 @@
         <div class="form-group">
           <label class="form-label">Members</label>
           <div class="team-members-list" id="teamMembersList"></div>
-          <button class="btn-ghost" id="btnAddMember">+ Add member</button>
+          <button class="sb-btn-ghost" id="btnAddMember">+ Add member</button>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost" id="btnCancelTeam">Cancel</button>
-        <button class="btn-primary" id="btnSaveTeam">Save Team</button>
+        <button class="sb-btn-ghost" id="btnCancelTeam">Cancel</button>
+        <button class="sb-btn-primary" id="btnSaveTeam">Save Team</button>
       </div>
     </div>
   </div>
@@ -573,8 +699,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost" id="btnCancelTask">Cancel</button>
-        <button class="btn-primary" id="btnSaveTask">Save Task</button>
+        <button class="sb-btn-ghost" id="btnCancelTask">Cancel</button>
+        <button class="sb-btn-primary" id="btnSaveTask">Save Task</button>
       </div>
     </div>
   </div>
@@ -627,8 +753,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost" id="btnCancelSkill">Cancel</button>
-        <button class="btn-primary" id="btnSaveSkill">Save Skill</button>
+        <button class="sb-btn-ghost" id="btnCancelSkill">Cancel</button>
+        <button class="sb-btn-primary" id="btnSaveSkill">Save Skill</button>
       </div>
     </div>
   </div>
@@ -653,8 +779,8 @@
         <div id="gitImportStatus" style="display:none"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost" id="btnCancelGitImport">Cancel</button>
-        <button class="btn-primary" id="btnStartGitImport">Import</button>
+        <button class="sb-btn-ghost" id="btnCancelGitImport">Cancel</button>
+        <button class="sb-btn-primary" id="btnStartGitImport">Import</button>
       </div>
     </div>
   </div>

@@ -40,45 +40,49 @@ npx skillbox detect
 npx skillbox recommend
 ```
 
-### Desktop App (Electron)
+### Desktop App (Electron + React)
 
 ```bash
 cd desktop
 npm install
-npm start        # production mode
-npm run dev      # with DevTools
+npm run build:ui   # build React UI
+npm start          # production mode
+npm run dev        # build + DevTools
+npm run dev:vite   # hot reload with Vite dev server
 ```
 
-A multi-panel IDE-style workspace inspired by VS Code, Linear, and Codex:
+A multi-panel IDE-style workspace built with React, Tailwind CSS, and shadcn/ui:
 
 ```
 ┌──────┬───────────┬──────────────────────┬──────────┐
 │  A   │  Project  │   Main Workspace     │  Right   │
 │  c   │  Sidebar  │   (views + terminal) │  Panel   │
-│  t   │  220px    │                      │  260px   │
+│  t   │ resizable │                      │ resizable│
 │  i   │           │                      │  [tabs]  │
-│  v   │  search   │  Dashboard / Tasks   │  Tasks   │
-│  i   │  proj-1   │  Teams / Skills      │  Activity│
-│  t   │  proj-2   │                      │  Info    │
-│  y   │  proj-3   │──────────────────────│          │
+│  v   │  search   │  Dashboard / Tasks   │  Context │
+│  i   │  proj-1   │  Teams / Skills      │  Tasks   │
+│  t   │  proj-2   │  Settings / GitHub   │  Activity│
+│  y   │  proj-3   │──────────────────────│  Info    │
 │ Bar  │           │  Terminal Panel      │          │
 │ 48px │           │  (resize/maximize)   │          │
 └──────┴───────────┴──────────────────────┴──────────┘
 ```
 
 Features:
+- **React + shadcn/ui** — Modern component architecture with Radix UI primitives
+- **Resizable Panels** — Drag borders to resize sidebar, right panel, and terminal
 - **Multi-Panel Layout** — Activity bar, collapsible project sidebar, main workspace, right info panel
 - **Skill Registry** — Browse, create custom skills, import from Git repos
 - **Project Management** — Connect folders, auto-detect stack, multi-environment (DEV/QA/PROD)
 - **Kanban Tasks** — Drag-and-drop task board with priority levels and project assignment
 - **GitHub Integration** — Connect with PAT, browse repos, clone, import skills
-- **Integrated Terminal** — Resizable bottom panel with project context detection
+- **Integrated Terminal** — Resizable bottom panel with xterm.js and project context detection
 - **Agent Teams** — Create teams with specialized skill sets, assign to projects
-- **Right Panel** — Contextual tabs: Tasks, Activity log, and Project info for active project
+- **Right Panel** — VS Code-style collapsible sections: Context files, Tasks (CRUD), Activity (git), Info (env vars, services, deps, scripts)
 - **Keyboard Shortcuts** — `Ctrl+B` toggle sidebar, panel collapse at responsive breakpoints
 - **Local SQLite Database** — All data persisted locally via sql.js (no cloud dependency)
 - **Real-time Analysis** — Progress bar during project analysis with step-by-step feedback
-- **Auto-generated Directives** — `DIRECTIVES.md` combining stack, skills, teams, env info
+- **Auto-generated Context** — AI-readable context files in `.skillbox/project/context/`
 
 ### VSCode / Cursor Extension
 
@@ -192,12 +196,22 @@ skillbox/
     testing/                 # (2)
     general/                 # (2)
     registry.json            # Auto-generated index
-  desktop/                   # Electron desktop app (v0.4.0)
+  desktop/                   # Electron desktop app (v0.5.0)
     src/main.js              # Main process (IPC, SQLite, terminal, GitHub)
-    src/preload.js           # Context bridge (electronAPI)
-    src/renderer.js          # Frontend logic (multi-panel state management)
-    src/index.html           # App shell (IDE layout: activity bar + panels)
-    src/styles.css           # shadcn oklch dark theme (panel system)
+    src/preload.js           # Context bridge (window.skillbox)
+    src/ui/                  # React UI (Vite + Tailwind + shadcn/ui)
+      main.jsx               # Entry point
+      App.jsx                # Layout shell with resizable panels
+      hooks/                 # useStore (context-based), useToast
+      lib/                   # electronAPI bridge, utils
+      layouts/               # ActivityBar
+      panels/                # ProjectSidebar, RightPanel, TerminalPanel
+      views/                 # Dashboard, Tasks, Skills, Teams, Settings, etc.
+      components/            # Modals (Task, Team, Skill, Env, GitImport)
+      components/ui/         # shadcn/ui primitives (16 components)
+    dist-ui/                 # Vite build output
+    vite.config.js           # Vite config (root: src/ui, output: dist-ui)
+    tailwind.config.js       # Tailwind v3 + shadcn/ui color system
     launch.js                # Launcher (ELECTRON_RUN_AS_NODE fix)
   cli/                       # CLI tool (npm: skillbox)
     src/lib/stackDetector.ts # Project stack auto-detection
@@ -235,15 +249,6 @@ The short version:
 3. Write actionable, example-driven instructions
 4. Run `npx tsx scripts/validate-skills.ts` to validate
 5. Submit a PR
-
-## Brand Colors
-
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Primary | `#7f3bff` | Main brand, buttons, accents |
-| Primary Dark | `#3c07a3` | Gradients, hover states |
-| Dark | `#272727` | Text, dark backgrounds |
-| Light | `#ffffff` | Light text, backgrounds |
 
 ## License
 
