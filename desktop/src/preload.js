@@ -17,6 +17,24 @@ contextBridge.exposeInMainWorld('skillbox', {
   generateDirectives: (dir) => ipcRenderer.invoke('generate-directives', dir),
   detectStack: (dir) => ipcRenderer.invoke('detect-stack', dir),
   getGitInfo: (p) => ipcRenderer.invoke('get-git-info', p),
+  getGitStatus: (p) => ipcRenderer.invoke('get-git-status', p),
+  getGitStatusDetailed: (p) => ipcRenderer.invoke('get-git-status-detailed', p),
+  gitCheckout: (p, branch) => ipcRenderer.invoke('git-checkout', p, branch),
+  gitCreateBranch: (p, name, from) => ipcRenderer.invoke('git-create-branch', p, name, from),
+  gitMerge: (p, branch) => ipcRenderer.invoke('git-merge', p, branch),
+  gitMergeAbort: (p) => ipcRenderer.invoke('git-merge-abort', p),
+  gitDeleteBranch: (p, branch, force) => ipcRenderer.invoke('git-delete-branch', p, branch, force),
+  gitStage: (p, files) => ipcRenderer.invoke('git-stage', p, files),
+  gitStageAll: (p) => ipcRenderer.invoke('git-stage-all', p),
+  gitUnstage: (p, files) => ipcRenderer.invoke('git-unstage', p, files),
+  gitUnstageAll: (p) => ipcRenderer.invoke('git-unstage-all', p),
+  gitCommit: (p, msg) => ipcRenderer.invoke('git-commit', p, msg),
+  gitPush: (p, remote, branch) => ipcRenderer.invoke('git-push', p, remote, branch),
+  gitPull: (p, remote, branch) => ipcRenderer.invoke('git-pull', p, remote, branch),
+  gitFetch: (p) => ipcRenderer.invoke('git-fetch', p),
+  gitDiff: (p, file, staged) => ipcRenderer.invoke('git-diff', p, file, staged),
+  gitStash: (p, action, msg) => ipcRenderer.invoke('git-stash', p, action, msg),
+  gitDiscard: (p, files) => ipcRenderer.invoke('git-discard', p, files),
   getProjectPorts: (p) => ipcRenderer.invoke('get-project-ports', p),
   detectTests: (p) => ipcRenderer.invoke('detect-tests', p),
 
@@ -43,6 +61,16 @@ contextBridge.exposeInMainWorld('skillbox', {
   assignTeamToProject: (p, tid) => ipcRenderer.invoke('assign-team-to-project', p, tid),
   unassignTeamFromProject: (p, tid) => ipcRenderer.invoke('unassign-team-from-project', p, tid),
 
+  // Context Sync
+  generateContextSync: (p) => ipcRenderer.invoke('generate-context-sync', p),
+  getContextPreview: (p) => ipcRenderer.invoke('get-context-preview', p),
+
+  // Storage
+  getStorageStats: () => ipcRenderer.invoke('get-storage-stats'),
+  cleanProjectContext: (p) => ipcRenderer.invoke('clean-project-context', p),
+  cleanProjectCache: (p) => ipcRenderer.invoke('clean-project-cache', p),
+  cleanAllStaleCache: (days) => ipcRenderer.invoke('clean-all-stale-cache', days),
+
   // History
   getHistory: (p) => ipcRenderer.invoke('get-history', p),
 
@@ -66,17 +94,23 @@ contextBridge.exposeInMainWorld('skillbox', {
   terminalResize: (id, cols, rows) => ipcRenderer.invoke('terminal-resize', id, cols, rows),
   terminalKill: (id) => ipcRenderer.invoke('terminal-kill', id),
   terminalList: () => ipcRenderer.invoke('terminal-list'),
-  onTerminalData: (cb) => ipcRenderer.on('terminal-data', (_e, data) => cb(data)),
-  onTerminalExit: (cb) => ipcRenderer.on('terminal-exit', (_e, data) => cb(data)),
+  onTerminalData: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('terminal-data', handler);
+    return () => ipcRenderer.removeListener('terminal-data', handler);
+  },
+  onTerminalExit: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('terminal-exit', handler);
+    return () => ipcRenderer.removeListener('terminal-exit', handler);
+  },
 
   // Analysis progress
-  onAnalysisProgress: (cb) => ipcRenderer.on('analysis-progress', (_e, data) => cb(data)),
-
-  // Tasks
-  getTasks: (projectPath) => ipcRenderer.invoke('get-tasks', projectPath),
-  createTask: (data) => ipcRenderer.invoke('create-task', data),
-  updateTask: (id, updates) => ipcRenderer.invoke('update-task', id, updates),
-  deleteTask: (id) => ipcRenderer.invoke('delete-task', id),
+  onAnalysisProgress: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('analysis-progress', handler);
+    return () => ipcRenderer.removeListener('analysis-progress', handler);
+  },
 
   // Messages / Chat
   getMessages: (projectPath, taskId) => ipcRenderer.invoke('get-messages', projectPath, taskId),
@@ -91,7 +125,11 @@ contextBridge.exposeInMainWorld('skillbox', {
   writeFile: (p, c) => ipcRenderer.invoke('write-file', p, c),
   watchFile: (p) => ipcRenderer.invoke('watch-file', p),
   unwatchFile: (p) => ipcRenderer.invoke('unwatch-file', p),
-  onFileChanged: (cb) => ipcRenderer.on('file-changed', (_e, data) => cb(data)),
+  onFileChanged: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('file-changed', handler);
+    return () => ipcRenderer.removeListener('file-changed', handler);
+  },
 
   // File Operations (Explorer)
   revealInFinder: (p) => ipcRenderer.invoke('reveal-in-finder', p),
@@ -100,6 +138,7 @@ contextBridge.exposeInMainWorld('skillbox', {
   createFile: (p) => ipcRenderer.invoke('create-file', p),
   createFolder: (p) => ipcRenderer.invoke('create-folder', p),
   renamePath: (old, neu) => ipcRenderer.invoke('rename-path', old, neu),
+  movePath: (src, destDir) => ipcRenderer.invoke('move-path', src, destDir),
   deletePath: (p) => ipcRenderer.invoke('delete-path', p),
   showContextMenu: (template) => ipcRenderer.invoke('show-context-menu', template),
 
@@ -128,17 +167,72 @@ contextBridge.exposeInMainWorld('skillbox', {
   setExtensionWorkspace: (p) => ipcRenderer.invoke('set-extension-workspace', p),
   reResolveExtensionWebview: (extId, viewId) => ipcRenderer.invoke('re-resolve-extension-webview', extId, viewId),
   getExtensionDetail: (id) => ipcRenderer.invoke('get-extension-detail', id),
-  onOpenFileInEditor: (cb) => ipcRenderer.on('open-file-in-editor', (_e, data) => cb(data)),
+  onOpenFileInEditor: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('open-file-in-editor', handler);
+    return () => ipcRenderer.removeListener('open-file-in-editor', handler);
+  },
   onExtensionWebviewMessage: (cb) => {
     ipcRenderer.removeAllListeners('extension-webview-message');
-    ipcRenderer.on('extension-webview-message', (_e, data) => cb(data));
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('extension-webview-message', handler);
+    return () => ipcRenderer.removeListener('extension-webview-message', handler);
   },
-  onExtensionToast: (cb) => ipcRenderer.on('extension-toast', (_e, data) => cb(data)),
-  onExtensionStatusBar: (cb) => ipcRenderer.on('extension-statusbar', (_e, data) => cb(data)),
+  onExtensionToast: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('extension-toast', handler);
+    return () => ipcRenderer.removeListener('extension-toast', handler);
+  },
+  onExtensionStatusBar: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('extension-statusbar', handler);
+    return () => ipcRenderer.removeListener('extension-statusbar', handler);
+  },
+
+  // MCP Server
+  mcpServerStart: (opts) => ipcRenderer.invoke('mcp-server-start', opts),
+  mcpServerStop: () => ipcRenderer.invoke('mcp-server-stop'),
+  mcpServerStatus: () => ipcRenderer.invoke('mcp-server-status'),
+  mcpResolveApproval: (id, approved) => ipcRenderer.invoke('mcp-resolve-approval', id, approved),
+  mcpGetPendingApprovals: () => ipcRenderer.invoke('mcp-get-pending-approvals'),
+  onMcpApprovalRequest: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('mcp-approval-request', handler);
+    return () => ipcRenderer.removeListener('mcp-approval-request', handler);
+  },
+  onMcpServerStatus: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('mcp-server-status', handler);
+    return () => ipcRenderer.removeListener('mcp-server-status', handler);
+  },
+  onMcpToolInvoked: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('mcp-tool-invoked', handler);
+    return () => ipcRenderer.removeListener('mcp-tool-invoked', handler);
+  },
+
+  // MCP Client
+  mcpClientConnectHttp: (config) => ipcRenderer.invoke('mcp-client-connect-http', config),
+  mcpClientConnectStdio: (config) => ipcRenderer.invoke('mcp-client-connect-stdio', config),
+  mcpClientDisconnect: (id) => ipcRenderer.invoke('mcp-client-disconnect', id),
+  mcpClientCallTool: (connId, tool, args) => ipcRenderer.invoke('mcp-client-call-tool', connId, tool, args),
+  mcpClientRefreshTools: (connId) => ipcRenderer.invoke('mcp-client-refresh-tools', connId),
+  mcpClientList: () => ipcRenderer.invoke('mcp-client-list'),
+  mcpClientAllTools: () => ipcRenderer.invoke('mcp-client-all-tools'),
+  onMcpConnectionsChanged: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('mcp-connections-changed', handler);
+    return () => ipcRenderer.removeListener('mcp-connections-changed', handler);
+  },
 
   // Misc
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   getDbStats: () => ipcRenderer.invoke('get-db-stats'),
+  getSystemStats: () => ipcRenderer.invoke('get-system-stats'),
   platform: process.platform,
-  onFullscreenChange: (cb) => ipcRenderer.on('fullscreen-change', (_e, isFullscreen) => cb(isFullscreen)),
+  onFullscreenChange: (cb) => {
+    const handler = (_e, isFullscreen) => cb(isFullscreen);
+    ipcRenderer.on('fullscreen-change', handler);
+    return () => ipcRenderer.removeListener('fullscreen-change', handler);
+  },
 });

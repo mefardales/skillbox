@@ -1,194 +1,206 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, Trash2, Edit } from 'lucide-react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Bot, Plus, Trash2, Pencil, Zap, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useStore } from '@/hooks/useStore';
 import { useToast } from '@/hooks/useToast';
 import { electronAPI } from '@/lib/electronAPI';
-import { TeamModal } from '@/components/TeamModal';
+import { AgentModal } from '@/components/AgentModal';
 
-function getInitials(name) {
-  return (name || '?')
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+function parseSkills(members) {
+  if (typeof members === 'string') {
+    try { return JSON.parse(members); } catch { return []; }
+  }
+  return members || [];
+}
+
+function getAgentProjects(agentId, projects) {
+  return projects.filter((p) => {
+    const teamIds = typeof p.teams === 'string'
+      ? JSON.parse(p.teams || '[]')
+      : p.teams || [];
+    return teamIds.includes(agentId);
+  });
+}
+
+const ROLE_COLORS = {
+  backend: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
+  frontend: 'bg-purple-500/15 text-purple-400 border-purple-500/20',
+  fullstack: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/20',
+  devops: 'bg-orange-500/15 text-orange-400 border-orange-500/20',
+  testing: 'bg-green-500/15 text-green-400 border-green-500/20',
+  data: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/20',
+  general: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20',
+};
+
+function getRoleFromSkills(skills) {
+  if (!skills.length) return 'general';
+  const first = typeof skills[0] === 'string' ? skills[0] : skills[0]?.name || '';
+  if (first.includes('backend') || first.includes('api')) return 'backend';
+  if (first.includes('frontend') || first.includes('react') || first.includes('css')) return 'frontend';
+  if (first.includes('devops') || first.includes('docker') || first.includes('deploy')) return 'devops';
+  if (first.includes('test')) return 'testing';
+  if (first.includes('data') || first.includes('sql')) return 'data';
+  return 'general';
+}
+
+function AgentCard({ agent, projects, onEdit, onDelete }) {
+  const skills = parseSkills(agent.members);
+  const agentProjects = getAgentProjects(agent.id, projects);
+  const role = agent.description || getRoleFromSkills(skills);
+  const roleKey = role.toLowerCase().split(' ')[0];
+  const colorClass = ROLE_COLORS[roleKey] || ROLE_COLORS.general;
+
+  return (
+    <div
+      className="group flex flex-col gap-3 rounded-lg border border-border bg-card p-4 hover:border-primary/30 transition-colors cursor-pointer"
+      onClick={() => onEdit(agent)}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+            <Bot className="h-4 w-4 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{agent.name}</p>
+            <Badge variant="outline" className={`mt-0.5 text-[10px] px-1.5 py-0 border ${colorClass}`}>
+              {role}
+            </Badge>
+          </div>
+        </div>
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(agent); }}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(agent.id); }}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Skills */}
+      {skills.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {skills.slice(0, 5).map((s, i) => {
+            const name = typeof s === 'string' ? s : s?.name || s;
+            const shortName = String(name).includes('/') ? String(name).split('/').pop() : String(name);
+            return (
+              <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
+                <Zap className="h-2.5 w-2.5" />
+                {shortName}
+              </Badge>
+            );
+          })}
+          {skills.length > 5 && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              +{skills.length - 5}
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* Projects */}
+      {agentProjects.length > 0 && (
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <FolderOpen className="h-3 w-3 shrink-0" />
+          <span className="truncate">
+            {agentProjects.map((p) => p.name).join(', ')}
+          </span>
+        </div>
+      )}
+
+      {/* Empty state for skills */}
+      {skills.length === 0 && agentProjects.length === 0 && (
+        <p className="text-[11px] text-muted-foreground/60">No skills or projects assigned</p>
+      )}
+    </div>
+  );
 }
 
 export function TeamsView() {
-  const { teams, setTeams, activeProject } = useStore();
+  const { teams, setTeams, projects } = useStore();
   const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingTeam, setEditingTeam] = useState(null);
-
-  useEffect(() => {
-    loadTeams();
-  }, []);
-
-  async function loadTeams() {
-    try {
-      const data = await electronAPI.getTeams();
-      setTeams(data);
-    } catch (err) {
-      toast('Failed to load teams', 'error');
-    }
-  }
+  const [editingAgent, setEditingAgent] = useState(null);
 
   function handleCreate() {
-    setEditingTeam(null);
+    setEditingAgent(null);
     setModalOpen(true);
   }
 
-  function handleEdit(team) {
-    setEditingTeam(team);
+  function handleEdit(agent) {
+    setEditingAgent(agent);
     setModalOpen(true);
   }
 
-  async function handleDelete(e, teamId) {
-    e.stopPropagation();
+  async function handleDelete(agentId) {
     try {
-      const updated = await electronAPI.deleteTeam(teamId);
+      const updated = await electronAPI.deleteTeam(agentId);
       setTeams(updated);
-      toast('Team deleted');
-    } catch (err) {
-      toast('Failed to delete team', 'error');
+      toast('Agent deleted', 'success');
+    } catch {
+      toast('Failed to delete agent', 'error');
     }
   }
 
   function handleSaved(updatedTeams) {
     setTeams(updatedTeams);
     setModalOpen(false);
-    setEditingTeam(null);
-  }
-
-  function parseMembers(members) {
-    if (typeof members === 'string') {
-      try {
-        return JSON.parse(members);
-      } catch {
-        return [];
-      }
-    }
-    return members || [];
+    setEditingAgent(null);
   }
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-lg font-semibold text-foreground">Teams</h2>
+          <h2 className="text-sm font-semibold">Agents</h2>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            {teams.length}
+          </Badge>
         </div>
-        <Button size="sm" onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-1" />
-          Create Team
+        <Button size="sm" className="h-7 text-xs" onClick={handleCreate}>
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          New Agent
         </Button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-5">
+      <div className="flex-1 overflow-auto p-4">
         {teams.length === 0 ? (
-          /* Empty state */
-          <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
-            <Users className="h-12 w-12 opacity-40" />
-            <p className="text-sm">No teams yet</p>
-            <Button variant="outline" size="sm" onClick={handleCreate}>
-              <Plus className="h-4 w-4 mr-1" />
-              Create Team
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+            <Bot className="h-10 w-10 opacity-30" />
+            <div className="text-center">
+              <p className="text-sm font-medium">No agents yet</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Create AI agents with specific roles and skills to work on your projects
+              </p>
+            </div>
+            <Button variant="outline" size="sm" className="h-7 text-xs mt-1" onClick={handleCreate}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Create Agent
             </Button>
           </div>
         ) : (
-          /* Team grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {teams.map((team) => {
-              const members = parseMembers(team.members);
-              return (
-                <Card
-                  key={team.id}
-                  className="group cursor-pointer hover:border-primary/40 transition-colors"
-                  onClick={() => handleEdit(team)}
-                >
-                  <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      {team.name}
-                    </CardTitle>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(team);
-                        }}
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={(e) => handleDelete(e, team.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {team.description && (
-                      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                        {team.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between">
-                      {/* Member avatars */}
-                      <div className="flex -space-x-2">
-                        {members.slice(0, 5).map((m, i) => (
-                          <Avatar
-                            key={i}
-                            className="h-7 w-7 border-2 border-background"
-                          >
-                            <AvatarFallback className="text-[10px]">
-                              {getInitials(m.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                        ))}
-                        {members.length > 5 && (
-                          <Avatar className="h-7 w-7 border-2 border-background">
-                            <AvatarFallback className="text-[10px]">
-                              +{members.length - 5}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                      </div>
-                      {/* Member count */}
-                      <Badge variant="secondary" className="text-xs">
-                        {members.length}{' '}
-                        {members.length === 1 ? 'member' : 'members'}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {teams.map((agent) => (
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                projects={projects}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Modal */}
-      <TeamModal
+      <AgentModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        team={editingTeam}
+        agent={editingAgent}
         onSaved={handleSaved}
       />
     </div>

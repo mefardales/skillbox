@@ -4,19 +4,21 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import {
-  ChevronRight, ChevronDown, FolderOpen, GitBranch, GitCommit,
+  ChevronRight, ChevronDown, FolderOpen, GitBranch, GitCommit, GitMerge,
   Play, RefreshCw, Plus, Check, X, Pencil, Trash2,
-  Activity, FileText, Info, Package, TestTube, Terminal,
+  FileText, Info, Package, TestTube, Terminal,
   Users, Zap, Globe, ExternalLink, CheckCircle2, Circle,
   Clock, AlertCircle, MoreHorizontal, Copy, Eye, EyeOff,
+  ArrowUp, ArrowDown, CircleDot, Minus, Archive,
 } from 'lucide-react';
 import { useStore } from '@/hooks/useStore';
 import { useToast } from '@/hooks/useToast';
 import { electronAPI } from '@/lib/electronAPI';
 import { formatDate } from '@/lib/utils';
+import MonacoViewer from '@/components/MonacoViewer';
 
 // ── Collapsible Section (VS Code style) ─────────────────────
-function Section({ title, count, defaultOpen = true, actions, children }) {
+function Section({ title, count, defaultOpen = true, actions, alwaysShowActions = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="select-none">
@@ -37,7 +39,7 @@ function Section({ title, count, defaultOpen = true, actions, children }) {
         )}
         {actions && (
           <div
-            className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+            className={`flex items-center gap-0.5 transition-opacity ${alwaysShowActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
             onClick={(e) => e.stopPropagation()}
           >
             {actions}
@@ -84,159 +86,118 @@ function IconBtn({ icon: Icon, onClick, title, className = '', size = 14 }) {
   );
 }
 
-const CONTEXT_FILES = [
-  'context.md', 'stack.md', 'services.md', 'dependencies.md',
-  'environment.md', 'team.md', 'scripts.md', 'testing.md',
-];
-
-const STATUS_ICONS = {
-  todo: <Circle className="h-3.5 w-3.5 text-muted-foreground" />,
-  in_progress: <Clock className="h-3.5 w-3.5 text-blue-400" />,
-  done: <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />,
-  blocked: <AlertCircle className="h-3.5 w-3.5 text-red-400" />,
-};
-
-const PRIORITY_DOT = {
-  critical: 'bg-red-500',
-  high: 'bg-orange-400',
-  medium: 'bg-yellow-400',
-  low: 'bg-green-500',
-};
-
 // ── CONTEXT TAB ─────────────────────────────────────────────
 function ContextTab() {
-  const { activeProject, projects, setProjects, refresh } = useStore();
+  const { activeProject } = useStore();
   const { toast } = useToast();
-  const [context, setContext] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const projectPath = activeProject?.path;
 
-  const loadContext = useCallback(async () => {
+  const loadPreview = useCallback(async () => {
     if (!projectPath) return;
     try {
-      const ctx = await electronAPI.getProjectContext(projectPath);
-      setContext(ctx);
+      const p = await electronAPI.getContextPreview(projectPath);
+      setPreview(p);
     } catch {
-      setContext(null);
+      setPreview(null);
     }
   }, [projectPath]);
 
-  useEffect(() => { loadContext(); }, [loadContext]);
+  useEffect(() => { loadPreview(); }, [loadPreview]);
 
   if (!activeProject) {
     return <EmptyState text="Select a project to view context" />;
   }
 
-  const initialized = context?.initialized;
-  const projectSkills = activeProject.skills || [];
-  const team = activeProject.team_id;
-
-  const handleInit = async () => {
-    setLoading(true);
-    try {
-      if (!activeProject.last_analyzed) await electronAPI.analyzeProject(projectPath);
-      await electronAPI.initProjectContext(projectPath);
-      toast({ description: 'Context initialized' });
-      await loadContext();
-    } catch {
-      toast({ description: 'Failed to initialize', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSync = async () => {
     setLoading(true);
     try {
-      await electronAPI.initProjectContext(projectPath);
-      toast({ description: 'Context synced' });
-      await loadContext();
+      const result = await electronAPI.generateContextSync(projectPath);
+      toast(`Synced: ${result.writtenFiles.join(', ')}`, 'success');
+      await loadPreview();
+    } catch {
+      toast('Failed to sync', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegenerate = async () => {
-    setLoading(true);
-    try {
-      await electronAPI.analyzeProject(projectPath);
-      await electronAPI.initProjectContext(projectPath);
-      toast({ description: 'Context regenerated' });
-      await loadContext();
-    } finally {
-      setLoading(false);
+  const handleCopy = () => {
+    if (preview?.markdown) {
+      navigator.clipboard.writeText(preview.markdown);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  const projectSkills = activeProject.skills || [];
+  const fileEntries = preview?.fileStatus ? Object.entries(preview.fileStatus) : [];
+
+  const syncButton = (
+    <button
+      onClick={handleSync}
+      disabled={loading}
+      className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground text-[10px] font-bold uppercase tracking-wider transition-colors"
+    >
+      <RefreshCw className={`h-2.5 w-2.5 ${loading ? 'animate-spin' : ''}`} />
+      {loading ? 'Syncing' : 'Sync'}
+    </button>
+  );
 
   return (
     <ScrollArea className="h-full">
-      {loading && (
-        <div className="flex items-center gap-2 px-3 py-1.5 text-[13px] text-muted-foreground bg-accent/30">
-          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-          Processing...
-        </div>
-      )}
-
-      {/* Project Info */}
-      <Section title="Project" defaultOpen={true}>
-        <TreeRow
-          icon={<FolderOpen className="h-4 w-4 text-blue-400" />}
-          label={activeProject.name}
-          sublabel={activeProject.stack?.language}
-        />
-        {activeProject.stack?.framework && (
-          <TreeRow
-            indent={1}
-            icon={<span className="text-[11px] text-muted-foreground">fw</span>}
-            label={activeProject.stack.framework}
-          />
-        )}
-        {activeProject.stack?.language && (
-          <TreeRow
-            indent={1}
-            icon={<span className="text-[11px] text-muted-foreground">lang</span>}
-            label={activeProject.stack.language}
-          />
-        )}
-      </Section>
-
-      {/* Context Files */}
+      {/* Context Preview */}
       <Section
-        title="Context Files"
-        count={initialized ? Object.keys(context?.files || {}).length : 0}
+        title="Context Preview"
         defaultOpen={true}
-        actions={
-          initialized ? (
-            <IconBtn icon={RefreshCw} onClick={handleRegenerate} title="Regenerate all" />
-          ) : null
-        }
+        alwaysShowActions={true}
+        actions={syncButton}
       >
-        {initialized ? (
-          CONTEXT_FILES.map((fname) => {
-            const hasFile = !!context?.files?.[fname];
-            return (
-              <TreeRow
-                key={fname}
-                icon={<FileText className={`h-4 w-4 ${hasFile ? 'text-blue-400' : 'text-muted-foreground/40'}`} />}
-                label={fname.replace('.md', '')}
-                sublabel={hasFile ? '' : 'missing'}
-                className={!hasFile ? 'opacity-50' : ''}
-                onClick={() => hasFile && electronAPI.getContextFilePath?.(projectPath, fname)}
-              />
-            );
-          })
+        {preview?.markdown ? (
+          <div className="px-2 py-1.5">
+            <MonacoViewer
+              value={preview.markdown}
+              language="markdown"
+              maxHeight={260}
+              minHeight={80}
+              lineNumbers={false}
+            />
+            <div className="flex items-center justify-between mt-2 px-1">
+              <span className="text-[10px] text-muted-foreground">
+                ~{preview.tokenEstimate} tokens
+              </span>
+              <button
+                onClick={handleCopy}
+                className="text-[11px] text-primary hover:underline transition-colors"
+              >
+                {copied ? 'Copied!' : 'Copy to Clipboard'}
+              </button>
+            </div>
+          </div>
         ) : (
-          <div className="px-4 py-2">
-            <p className="text-[13px] text-muted-foreground mb-2">
-              No context files yet. Initialize to create project context for AI assistants.
-            </p>
-            <Button size="sm" className="h-7 text-[13px] w-full" onClick={handleInit} disabled={loading}>
-              Initialize Context
-            </Button>
+          <div className="px-4 py-2 text-[13px] text-muted-foreground">
+            Click <span className="text-primary font-semibold">Sync</span> to generate context preview
           </div>
         )}
       </Section>
+
+      {/* Synced Files */}
+      {fileEntries.length > 0 && (
+        <Section title="Synced Files" count={fileEntries.filter(([,s]) => s.exists).length} defaultOpen={true}>
+          {fileEntries.map(([fileName, status]) => (
+            <TreeRow
+              key={fileName}
+              icon={<FileText className={`h-4 w-4 ${status.exists ? 'text-green-400' : 'text-muted-foreground/40'}`} />}
+              label={<span className="font-mono text-[12px]">{fileName}</span>}
+              sublabel={status.exists ? 'synced' : 'pending'}
+              className={!status.exists ? 'opacity-50' : ''}
+            />
+          ))}
+        </Section>
+      )}
 
       {/* Skills */}
       <Section title="Skills" count={projectSkills.length} defaultOpen={projectSkills.length > 0}>
@@ -252,282 +213,396 @@ function ContextTab() {
           <div className="px-4 py-1 text-[13px] text-muted-foreground">No skills assigned</div>
         )}
       </Section>
-
-      {/* Sync Action */}
-      <div className="px-3 py-2 border-t border-border">
-        <Button
-          size="sm"
-          className="h-7 text-[13px] w-full"
-          onClick={handleSync}
-          disabled={loading}
-        >
-          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-          Sync to AI Assistant
-        </Button>
-      </div>
     </ScrollArea>
   );
 }
 
-// ── TASKS TAB ───────────────────────────────────────────────
-function TasksTab() {
-  const { activeProject, tasks, refreshTasks } = useStore();
+// ── File status icon + color ──
+const STATUS_MAP = {
+  modified: { label: 'M', color: 'text-yellow-400' },
+  added: { label: 'A', color: 'text-green-400' },
+  deleted: { label: 'D', color: 'text-red-400' },
+  renamed: { label: 'R', color: 'text-blue-400' },
+  copied: { label: 'C', color: 'text-blue-400' },
+  untracked: { label: 'U', color: 'text-green-400' },
+  M: { label: 'M', color: 'text-yellow-400' },
+  A: { label: 'A', color: 'text-green-400' },
+  D: { label: 'D', color: 'text-red-400' },
+};
+
+function FileStatusBadge({ status }) {
+  const s = STATUS_MAP[status] || { label: status?.[0] || '?', color: 'text-muted-foreground' };
+  return <span className={`text-[10px] font-bold font-mono ${s.color} shrink-0 w-3 text-center`}>{s.label}</span>;
+}
+
+// ── SOURCE CONTROL TAB ──────────────────────────────────────
+function SourceControlTab() {
+  const { activeProject, gitInfo, gitStatus, refreshGit, addLog } = useStore();
   const { toast } = useToast();
-  const [adding, setAdding] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [editingId, setEditingId] = useState(null);
-  const [editTitle, setEditTitle] = useState('');
-
-  const projectTasks = activeProject
-    ? (tasks || []).filter((t) => t.project_path === activeProject.path)
-    : (tasks || []);
-  const openTasks = projectTasks.filter((t) => t.status !== 'done');
-  const doneTasks = projectTasks.filter((t) => t.status === 'done');
-
-  const addTask = async () => {
-    if (!newTitle.trim()) return;
-    try {
-      await electronAPI.createTask({
-        title: newTitle.trim(),
-        project_path: activeProject?.path,
-        status: 'todo',
-        priority: 'medium',
-      });
-      setNewTitle('');
-      setAdding(false);
-      refreshTasks?.(activeProject?.path);
-    } catch {
-      toast({ description: 'Failed to add task', variant: 'destructive' });
-    }
-  };
-
-  const cycleStatus = async (task) => {
-    const order = ['todo', 'in_progress', 'done'];
-    const next = order[(order.indexOf(task.status) + 1) % order.length];
-    try {
-      await electronAPI.updateTask(task.id, { status: next });
-      refreshTasks?.(activeProject?.path);
-    } catch {
-      toast({ description: 'Failed to update', variant: 'destructive' });
-    }
-  };
-
-  const deleteTask = async (id) => {
-    try {
-      await electronAPI.deleteTask(id);
-      refreshTasks?.(activeProject?.path);
-    } catch {
-      toast({ description: 'Failed to delete', variant: 'destructive' });
-    }
-  };
-
-  const saveEdit = async (id) => {
-    if (!editTitle.trim()) return;
-    try {
-      await electronAPI.updateTask(id, { title: editTitle.trim() });
-      setEditingId(null);
-      refreshTasks?.(activeProject?.path);
-    } catch {
-      toast({ description: 'Failed to update', variant: 'destructive' });
-    }
-  };
-
-  return (
-    <ScrollArea className="h-full">
-      {/* Open Tasks */}
-      <Section
-        title="Open"
-        count={openTasks.length}
-        defaultOpen={true}
-        actions={<IconBtn icon={Plus} onClick={() => setAdding(true)} title="Add task" />}
-      >
-        {adding && (
-          <div className="flex items-center gap-1 px-3 py-1">
-            <Input
-              autoFocus
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') addTask();
-                if (e.key === 'Escape') { setAdding(false); setNewTitle(''); }
-              }}
-              placeholder="Task title..."
-              className="h-6 text-[13px] flex-1"
-            />
-            <IconBtn icon={Check} onClick={addTask} title="Save" />
-            <IconBtn icon={X} onClick={() => { setAdding(false); setNewTitle(''); }} title="Cancel" />
-          </div>
-        )}
-        {openTasks.length > 0 ? (
-          openTasks.map((t) => (
-            editingId === t.id ? (
-              <div key={t.id} className="flex items-center gap-1 px-3 py-0.5">
-                <Input
-                  autoFocus
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveEdit(t.id);
-                    if (e.key === 'Escape') setEditingId(null);
-                  }}
-                  className="h-6 text-[13px] flex-1"
-                />
-                <IconBtn icon={Check} onClick={() => saveEdit(t.id)} title="Save" />
-                <IconBtn icon={X} onClick={() => setEditingId(null)} title="Cancel" />
-              </div>
-            ) : (
-              <TreeRow
-                key={t.id}
-                icon={
-                  <span onClick={(e) => { e.stopPropagation(); cycleStatus(t); }} className="cursor-pointer">
-                    {STATUS_ICONS[t.status] || STATUS_ICONS.todo}
-                  </span>
-                }
-                label={
-                  <span className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_DOT[t.priority] || 'bg-muted-foreground'}`} />
-                    <span className="truncate">{t.title}</span>
-                  </span>
-                }
-                actions={
-                  <>
-                    <IconBtn icon={Pencil} onClick={() => { setEditingId(t.id); setEditTitle(t.title); }} title="Edit" />
-                    <IconBtn icon={Trash2} onClick={() => deleteTask(t.id)} title="Delete" className="hover:text-red-400" />
-                  </>
-                }
-              />
-            )
-          ))
-        ) : !adding ? (
-          <div className="px-4 py-1 text-[13px] text-muted-foreground">No open tasks</div>
-        ) : null}
-      </Section>
-
-      {/* Completed Tasks */}
-      {doneTasks.length > 0 && (
-        <Section title="Completed" count={doneTasks.length} defaultOpen={false}>
-          {doneTasks.slice(0, 15).map((t) => (
-            <TreeRow
-              key={t.id}
-              icon={<CheckCircle2 className="h-3.5 w-3.5 text-green-500/60" />}
-              label={<span className="line-through text-muted-foreground">{t.title}</span>}
-              actions={
-                <IconBtn icon={Trash2} onClick={() => deleteTask(t.id)} title="Delete" className="hover:text-red-400" />
-              }
-            />
-          ))}
-          {doneTasks.length > 15 && (
-            <div className="px-4 py-1 text-[11px] text-muted-foreground">+{doneTasks.length - 15} more</div>
-          )}
-        </Section>
-      )}
-    </ScrollArea>
-  );
-}
-
-// ── ACTIVITY TAB ────────────────────────────────────────────
-function ActivityTab() {
-  const { activeProject } = useStore();
-  const [gitInfo, setGitInfo] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const projectPath = activeProject?.path;
-
-  const loadGit = useCallback(async () => {
-    if (!projectPath) { setGitInfo(null); return; }
-    setLoading(true);
-    try {
-      const info = await electronAPI.getGitInfo(projectPath);
-      setGitInfo(info);
-    } catch {
-      setGitInfo(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectPath]);
-
-  useEffect(() => { loadGit(); }, [loadGit]);
+  const [switching, setSwitching] = useState(false);
+  const [branchDropdown, setBranchDropdown] = useState(false);
+  const [commitMsg, setCommitMsg] = useState('');
+  const [operating, setOperating] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [newBranchModal, setNewBranchModal] = useState(false);
+  const [newBranchName, setNewBranchName] = useState('');
+  const [newBranchFrom, setNewBranchFrom] = useState('');
+  const [mergeModal, setMergeModal] = useState(false);
+  const [mergeBranch, setMergeBranch] = useState('');
 
   if (!activeProject) return <EmptyState text="Select a project" />;
-  if (loading) return <EmptyState text="Loading git info..." />;
-  if (!gitInfo || gitInfo.error) return <EmptyState text="No git repository detected" />;
+  if (!gitInfo) return <EmptyState text="No git repository detected" />;
 
+  const pp = activeProject.path;
   const localBranches = gitInfo.branches?.local || [];
   const remoteBranches = gitInfo.branches?.remote || [];
   const commits = gitInfo.commits || [];
+  const staged = gitStatus?.staged || [];
+  const unstaged = gitStatus?.unstaged || [];
+  const untracked = gitStatus?.untracked || [];
+  const totalChanges = staged.length + unstaged.length + untracked.length;
   const remoteShort = gitInfo.remoteUrl?.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
+  const ahead = gitInfo.ahead || 0;
+  const behind = gitInfo.behind || 0;
+
+  const gitOp = async (name, fn) => {
+    setOperating(name);
+    try { await fn(); refreshGit(); } finally { setOperating(null); }
+  };
+
+  const handleCheckout = async (branch) => {
+    if (branch === gitInfo.branch || switching) return;
+    if (totalChanges > 0) {
+      setConfirmAction({ type: 'checkout', branch, message: `You have ${totalChanges} uncommitted change${totalChanges > 1 ? 's' : ''}. Switching to "${branch}" may lose them. Continue?` });
+      setBranchDropdown(false);
+      return;
+    }
+    await doCheckout(branch);
+  };
+
+  const doCheckout = async (branch) => {
+    setSwitching(true); setBranchDropdown(false); setConfirmAction(null);
+    addLog('info', 'git', `Switching to branch "${branch}"...`);
+    try {
+      const result = await electronAPI.gitCheckout(pp, branch);
+      if (result?.ok) {
+        addLog('success', 'git', `Switched to branch "${result.branch}"`);
+        toast({ title: `Switched to ${result.branch}` });
+        refreshGit();
+      } else {
+        const raw = result?.error || 'Unknown error';
+        const summary = raw.includes('overwritten') ? 'Uncommitted changes would be overwritten. Commit or stash first.' : raw.split('\n')[0].substring(0, 120);
+        addLog('error', 'git', `Checkout failed: ${summary}`, raw);
+        toast({ title: 'Checkout failed', description: summary, variant: 'destructive' });
+      }
+    } catch (e) {
+      addLog('error', 'git', `Checkout error: ${e.message}`);
+      toast({ title: 'Checkout failed', description: e.message, variant: 'destructive' });
+    } finally { setSwitching(false); }
+  };
+
+  const handleStage = (file) => gitOp('stage', async () => { const r = await electronAPI.gitStage(pp, [file]); if (!r?.ok) toast({ title: 'Stage failed', description: r?.error, variant: 'destructive' }); });
+  const handleUnstage = (file) => gitOp('unstage', async () => { const r = await electronAPI.gitUnstage(pp, [file]); if (!r?.ok) toast({ title: 'Unstage failed', description: r?.error, variant: 'destructive' }); });
+  const handleStageAll = () => gitOp('stage', async () => { const r = await electronAPI.gitStageAll(pp); if (!r?.ok) toast({ title: 'Stage all failed', description: r?.error, variant: 'destructive' }); });
+  const handleUnstageAll = () => gitOp('unstage', async () => { const r = await electronAPI.gitUnstageAll(pp); if (!r?.ok) toast({ title: 'Unstage all failed', description: r?.error, variant: 'destructive' }); });
+
+  const handleCommit = () => gitOp('commit', async () => {
+    if (!commitMsg.trim()) { toast({ title: 'Enter a commit message' }); return; }
+    if (staged.length === 0) { toast({ title: 'No staged changes to commit' }); return; }
+    addLog('info', 'git', `Committing: "${commitMsg.trim()}"...`);
+    const r = await electronAPI.gitCommit(pp, commitMsg.trim());
+    if (r?.ok) { addLog('success', 'git', `Committed ${r.hash}`); toast({ title: `Committed ${r.hash}` }); setCommitMsg(''); }
+    else { addLog('error', 'git', `Commit failed: ${r?.error}`); toast({ title: 'Commit failed', description: r?.error, variant: 'destructive' }); }
+  });
+
+  const handlePush = () => gitOp('push', async () => { addLog('info', 'git', 'Pushing...'); const r = await electronAPI.gitPush(pp); toast(r?.ok ? { title: 'Push completed' } : { title: 'Push failed', description: r?.error, variant: 'destructive' }); });
+  const handlePull = () => gitOp('pull', async () => { addLog('info', 'git', 'Pulling...'); const r = await electronAPI.gitPull(pp); toast(r?.ok ? { title: 'Pull completed' } : { title: 'Pull failed', description: r?.error, variant: 'destructive' }); });
+  const handleFetch = () => gitOp('fetch', async () => { addLog('info', 'git', 'Fetching...'); const r = await electronAPI.gitFetch(pp); toast(r?.ok ? { title: 'Fetch completed' } : { title: 'Fetch failed', description: r?.error, variant: 'destructive' }); });
+  const handleStash = () => gitOp('stash', async () => { addLog('info', 'git', 'Stashing...'); const r = await electronAPI.gitStash(pp, 'push'); toast(r?.ok ? { title: 'Changes stashed' } : { title: 'Stash failed', description: r?.error, variant: 'destructive' }); });
+  const handleStashPop = () => gitOp('stash', async () => { addLog('info', 'git', 'Popping stash...'); const r = await electronAPI.gitStash(pp, 'pop'); toast(r?.ok ? { title: 'Stash applied' } : { title: 'Stash pop failed', description: r?.error, variant: 'destructive' }); });
+  const handleMergeAbort = () => gitOp('merge-abort', async () => { addLog('info', 'git', 'Aborting merge...'); const r = await electronAPI.gitMergeAbort(pp); toast(r?.ok ? { title: 'Merge aborted' } : { title: 'Merge abort failed', description: r?.error, variant: 'destructive' }); });
+
+  const handleDiscard = (file) => setConfirmAction({ type: 'discard', file, message: `Discard changes to "${file}"? This cannot be undone.` });
+  const doDiscard = async (file) => { setConfirmAction(null); await gitOp('discard', async () => { const r = await electronAPI.gitDiscard(pp, [file]); r?.ok ? addLog('info', 'git', `Discarded: ${file}`) : toast({ title: 'Discard failed', description: r?.error, variant: 'destructive' }); }); };
+
+  const handleCreateBranch = () => gitOp('create-branch', async () => {
+    if (!newBranchName.trim()) return toast({ title: 'Enter a branch name' });
+    addLog('info', 'git', `Creating branch "${newBranchName.trim()}"...`);
+    const r = await electronAPI.gitCreateBranch(pp, newBranchName.trim(), newBranchFrom || undefined);
+    if (r?.ok) { toast({ title: `Created branch ${r.branch}` }); setNewBranchModal(false); setNewBranchName(''); setNewBranchFrom(''); }
+    else toast({ title: 'Create branch failed', description: r?.error, variant: 'destructive' });
+  });
+
+  const handleMerge = () => gitOp('merge', async () => {
+    if (!mergeBranch) return toast({ title: 'Select a branch to merge' });
+    addLog('info', 'git', `Merging "${mergeBranch}" into "${gitInfo.branch}"...`);
+    const r = await electronAPI.gitMerge(pp, mergeBranch);
+    if (r?.ok) { toast({ title: `Merged ${mergeBranch}` }); setMergeModal(false); setMergeBranch(''); }
+    else if (r?.conflict) { toast({ title: 'Merge conflict', description: 'Resolve conflicts or abort merge.', variant: 'destructive' }); setMergeModal(false); }
+    else toast({ title: 'Merge failed', description: r?.error, variant: 'destructive' });
+  });
+
+  const handleDeleteBranch = (branch) => setConfirmAction({ type: 'delete-branch', branch, message: `Delete branch "${branch}"?` });
+  const doDeleteBranch = async (branch) => { setConfirmAction(null); await gitOp('delete-branch', async () => {
+    const r = await electronAPI.gitDeleteBranch(pp, branch, false);
+    if (r?.ok) toast({ title: `Deleted ${branch}` });
+    else if (r?.error?.includes('not fully merged')) setConfirmAction({ type: 'force-delete-branch', branch, message: `"${branch}" is not fully merged. Force delete?` });
+    else toast({ title: 'Delete failed', description: r?.error, variant: 'destructive' });
+  }); };
+  const doForceDeleteBranch = async (branch) => { setConfirmAction(null); await gitOp('delete-branch', async () => {
+    const r = await electronAPI.gitDeleteBranch(pp, branch, true);
+    if (r?.ok) toast({ title: `Deleted ${branch}` });
+    else toast({ title: 'Delete failed', description: r?.error, variant: 'destructive' });
+  }); };
 
   return (
-    <ScrollArea className="h-full">
-      {/* Current Branch */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-        <GitBranch className="h-4 w-4 text-green-400 shrink-0" />
-        <span className="text-[13px] font-medium truncate">{gitInfo.branch}</span>
-        <IconBtn icon={RefreshCw} onClick={loadGit} title="Refresh" className="ml-auto" />
-      </div>
-      {remoteShort && (
-        <div className="px-3 py-1 text-[12px] text-muted-foreground truncate border-b border-border" title={gitInfo.remoteUrl}>
-          <Globe className="h-3 w-3 inline mr-1 relative -top-px" />
-          {remoteShort}
+    <div className="flex flex-col h-full relative">
+      {/* Confirmation dialog */}
+      {confirmAction && (
+        <div className="absolute inset-0 z-50 bg-background/80 flex items-center justify-center p-4">
+          <div className="bg-background border border-border rounded-lg p-4 max-w-[280px] shadow-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="h-4 w-4 text-yellow-400 shrink-0" />
+              <span className="text-[13px] font-semibold">Confirm</span>
+            </div>
+            <p className="text-[12px] text-muted-foreground mb-3">{confirmAction.message}</p>
+            <div className="flex items-center gap-2 justify-end">
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setConfirmAction(null)}>Cancel</Button>
+              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => {
+                if (confirmAction.type === 'checkout') doCheckout(confirmAction.branch);
+                else if (confirmAction.type === 'discard') doDiscard(confirmAction.file);
+                else if (confirmAction.type === 'delete-branch') doDeleteBranch(confirmAction.branch);
+                else if (confirmAction.type === 'force-delete-branch') doForceDeleteBranch(confirmAction.branch);
+              }}>Continue</Button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Branches */}
-      <Section title="Branches" count={localBranches.length} defaultOpen={true}>
-        {localBranches.slice(0, 20).map((b) => {
-          const active = b === gitInfo.branch;
-          return (
-            <TreeRow
-              key={b}
-              icon={<GitBranch className={`h-3.5 w-3.5 ${active ? 'text-green-400' : 'text-muted-foreground'}`} />}
-              label={<span className={`font-mono text-[12px] ${active ? 'font-semibold' : ''}`}>{b}</span>}
-            />
-          );
-        })}
-        {localBranches.length > 20 && (
-          <div className="px-4 py-1 text-[11px] text-muted-foreground">+{localBranches.length - 20} more</div>
-        )}
-      </Section>
-
-      {/* Remote Branches */}
-      {remoteBranches.length > 0 && (
-        <Section title="Remote" count={remoteBranches.length} defaultOpen={false}>
-          {remoteBranches.slice(0, 10).map((b) => (
-            <TreeRow
-              key={b}
-              icon={<GitBranch className="h-3.5 w-3.5 text-muted-foreground/50" />}
-              label={<span className="font-mono text-[12px] text-muted-foreground">{b}</span>}
-            />
-          ))}
-          {remoteBranches.length > 10 && (
-            <div className="px-4 py-1 text-[11px] text-muted-foreground">+{remoteBranches.length - 10} more</div>
-          )}
-        </Section>
-      )}
-
-      {/* Recent Commits */}
-      <Section title="Recent Commits" count={commits.length} defaultOpen={true}>
-        {commits.slice(0, 25).map((c, i) => (
-          <div key={i} className="px-3 py-1 hover:bg-accent/50 cursor-default">
-            <div className="flex items-center gap-1.5">
-              <GitCommit className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-[13px] truncate flex-1">{c.message?.substring(0, 72)}</span>
+      {/* New Branch Modal */}
+      {newBranchModal && (
+        <div className="absolute inset-0 z-50 bg-background/80 flex items-center justify-center p-3">
+          <div className="bg-background border border-border rounded-lg p-3 w-full max-w-[280px] shadow-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <GitBranch className="h-4 w-4 text-primary" />
+              <span className="text-[12px] font-semibold">New Branch</span>
+              <button className="ml-auto text-muted-foreground hover:text-foreground" onClick={() => setNewBranchModal(false)}><X className="h-3.5 w-3.5" /></button>
             </div>
-            <div className="flex items-center gap-2 pl-5 text-[11px] text-muted-foreground">
-              <span>{c.author}</span>
-              <span>{formatDate(c.date)}</span>
-              {(c.insertions || c.deletions) ? (
-                <span className="ml-auto">
-                  <span className="text-green-400">+{c.insertions || 0}</span>
-                  {' '}
-                  <span className="text-red-400">-{c.deletions || 0}</span>
-                </span>
-              ) : null}
+            <input className="w-full h-[26px] px-2 rounded-md border border-border bg-background text-[11px] mb-1.5 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="feature/my-branch" value={newBranchName} onChange={e => setNewBranchName(e.target.value)} autoFocus onKeyDown={e => { if (e.key === 'Enter') handleCreateBranch(); }} />
+            <select className="w-full h-[26px] px-1.5 rounded-md border border-border bg-background text-[11px] mb-2 focus:outline-none focus:ring-1 focus:ring-primary" value={newBranchFrom} onChange={e => setNewBranchFrom(e.target.value)}>
+              <option value="">From: {gitInfo.branch} (current)</option>
+              {localBranches.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <div className="flex gap-1.5 justify-end">
+              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setNewBranchModal(false)}>Cancel</Button>
+              <Button size="sm" className="h-6 text-[10px]" onClick={handleCreateBranch} disabled={!newBranchName.trim()}>Create</Button>
             </div>
           </div>
-        ))}
-      </Section>
-    </ScrollArea>
+        </div>
+      )}
+
+      {/* Merge Modal */}
+      {mergeModal && (
+        <div className="absolute inset-0 z-50 bg-background/80 flex items-center justify-center p-3">
+          <div className="bg-background border border-border rounded-lg p-3 w-full max-w-[280px] shadow-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <GitMerge className="h-4 w-4 text-primary" />
+              <span className="text-[12px] font-semibold">Merge into {gitInfo.branch}</span>
+              <button className="ml-auto text-muted-foreground hover:text-foreground" onClick={() => setMergeModal(false)}><X className="h-3.5 w-3.5" /></button>
+            </div>
+            <select className="w-full h-[26px] px-1.5 rounded-md border border-border bg-background text-[11px] mb-2 focus:outline-none focus:ring-1 focus:ring-primary" value={mergeBranch} onChange={e => setMergeBranch(e.target.value)}>
+              <option value="">Select branch...</option>
+              {localBranches.filter(b => b !== gitInfo.branch).map(b => <option key={b} value={b}>{b}</option>)}
+              {remoteBranches.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <div className="flex gap-1.5 justify-end">
+              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setMergeModal(false)}>Cancel</Button>
+              <Button size="sm" className="h-6 text-[10px]" onClick={handleMerge} disabled={!mergeBranch}>Merge</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Branch header */}
+      <div className="px-3 py-2 border-b border-border shrink-0">
+        <div className="flex items-center gap-1">
+          <div className="relative flex-1 min-w-0">
+            <button onClick={() => setBranchDropdown(!branchDropdown)} disabled={switching}
+              className="flex items-center gap-1.5 h-[26px] px-2 rounded-md border border-border bg-background hover:bg-accent/50 transition-colors w-full text-left">
+              <GitBranch className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="text-[13px] font-semibold truncate">{gitInfo.branch}</span>
+              {switching ? <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground ml-auto shrink-0" /> : <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />}
+            </button>
+            {branchDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setBranchDropdown(false)} />
+                <div className="absolute left-0 right-0 top-[28px] z-50 bg-background border border-border rounded-md shadow-lg max-h-[240px] overflow-y-auto">
+                  {localBranches.map((b) => {
+                    const active = b === gitInfo.branch;
+                    return (
+                      <button key={b} onClick={() => handleCheckout(b)}
+                        className={`flex items-center gap-1.5 w-full px-2.5 py-1.5 text-left text-[12px] font-mono hover:bg-accent/50 ${active ? 'text-primary font-semibold' : 'text-foreground'}`}>
+                        {active ? <Check className="h-3 w-3 text-primary shrink-0" /> : <GitBranch className="h-3 w-3 text-muted-foreground shrink-0" />}
+                        <span className="truncate">{b}</span>
+                      </button>
+                    );
+                  })}
+                  {remoteBranches.length > 0 && (
+                    <>
+                      <div className="h-px bg-border my-1" />
+                      <div className="px-2.5 py-1 text-[10px] text-muted-foreground uppercase tracking-wider">Remote</div>
+                      {remoteBranches.map((b) => (
+                        <button key={b} onClick={() => handleCheckout(b.replace(/^origin\//, ''))}
+                          className="flex items-center gap-1.5 w-full px-2.5 py-1.5 text-left text-[12px] font-mono text-muted-foreground hover:bg-accent/50">
+                          <Globe className="h-3 w-3 shrink-0" /><span className="truncate">{b}</span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+          <IconBtn icon={Plus} onClick={() => { setNewBranchName(''); setNewBranchFrom(''); setNewBranchModal(true); }} title="New Branch" />
+          <IconBtn icon={GitMerge} onClick={() => { setMergeBranch(''); setMergeModal(true); }} title="Merge" />
+          <IconBtn icon={RefreshCw} onClick={refreshGit} title="Refresh" />
+        </div>
+        {remoteShort && (
+          <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground truncate" title={gitInfo.remoteUrl}>
+            <Globe className="h-3 w-3 shrink-0" /><span className="truncate">{remoteShort}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Sync actions bar */}
+      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border shrink-0">
+        <button onClick={handleFetch} disabled={!!operating}
+          className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground text-[10px] font-bold uppercase tracking-wider transition-colors">
+          <RefreshCw className={`h-2.5 w-2.5 ${operating === 'fetch' ? 'animate-spin' : ''}`} /> Sync
+        </button>
+        <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1 px-2" onClick={handlePull} disabled={!!operating}>
+          <ArrowDown className={`h-3 w-3 ${operating === 'pull' ? 'animate-pulse' : ''}`} /> Pull{behind > 0 && <span className="text-orange-400">({behind})</span>}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1 px-2" onClick={handlePush} disabled={!!operating}>
+          <ArrowUp className={`h-3 w-3 ${operating === 'push' ? 'animate-pulse' : ''}`} /> Push{ahead > 0 && <span className="text-primary">({ahead})</span>}
+        </Button>
+        <div className="ml-auto flex items-center gap-0.5">
+          <Button size="sm" variant="ghost" className="h-6 text-[11px] gap-1 px-1.5" onClick={handleStash} disabled={!!operating || totalChanges === 0}>
+            <Archive className="h-3 w-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 text-[11px] px-1.5" onClick={handleStashPop} disabled={!!operating}>Pop</Button>
+          <Button size="sm" variant="ghost" className="h-6 text-[11px] px-1.5 text-red-400 hover:text-red-300" onClick={handleMergeAbort} disabled={!!operating} title="Abort merge">
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Scrollable content */}
+      <ScrollArea className="flex-1">
+        {/* Staged Changes */}
+        <Section title="Staged Changes" count={staged.length} defaultOpen={true}
+          actions={staged.length > 0 && <button onClick={handleUnstageAll} className="text-[10px] text-muted-foreground hover:text-foreground px-1" title="Unstage all">−</button>}>
+          {staged.length === 0 ? (
+            <div className="px-3 py-1 text-[11px] text-muted-foreground">No staged changes</div>
+          ) : staged.map((f) => (
+            <div key={f.file} className="flex items-center gap-1.5 px-3 py-0.5 hover:bg-accent/50 group text-[12px]">
+              <FileStatusBadge status={f.status} />
+              <span className="truncate flex-1 font-mono text-[11px]" title={f.file}>{f.file}</span>
+              <button onClick={() => handleUnstage(f.file)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground text-[10px] px-1" title="Unstage">−</button>
+            </div>
+          ))}
+        </Section>
+
+        {/* Unstaged Changes */}
+        <Section title="Changes" count={unstaged.length + untracked.length} defaultOpen={true}
+          actions={(unstaged.length + untracked.length > 0) && <button onClick={handleStageAll} className="text-[10px] text-muted-foreground hover:text-foreground px-1" title="Stage all">+</button>}>
+          {unstaged.length === 0 && untracked.length === 0 ? (
+            <div className="px-3 py-1 text-[11px] text-muted-foreground">No changes</div>
+          ) : (
+            <>
+              {unstaged.map((f) => (
+                <div key={f.file} className="flex items-center gap-1.5 px-3 py-0.5 hover:bg-accent/50 group text-[12px]">
+                  <FileStatusBadge status={f.status} />
+                  <span className="truncate flex-1 font-mono text-[11px]" title={f.file}>{f.file}</span>
+                  <button onClick={() => handleDiscard(f.file)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 text-[10px] px-1" title="Discard">✕</button>
+                  <button onClick={() => handleStage(f.file)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground text-[10px] px-1" title="Stage">+</button>
+                </div>
+              ))}
+              {untracked.map((f) => (
+                <div key={f.file} className="flex items-center gap-1.5 px-3 py-0.5 hover:bg-accent/50 group text-[12px]">
+                  <FileStatusBadge status="untracked" />
+                  <span className="truncate flex-1 font-mono text-[11px]" title={f.file}>{f.file}</span>
+                  <button onClick={() => handleStage(f.file)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground text-[10px] px-1" title="Stage">+</button>
+                </div>
+              ))}
+            </>
+          )}
+        </Section>
+
+        {/* Commit box */}
+        <div className="px-3 py-2 border-b border-border">
+          <textarea className="w-full h-[52px] px-2 py-1.5 rounded-md border border-border bg-background text-[12px] resize-none placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            placeholder="Commit message..." value={commitMsg} onChange={(e) => setCommitMsg(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleCommit(); }} />
+          <Button size="sm" className="w-full h-7 text-xs mt-1.5 gap-1.5" onClick={handleCommit} disabled={!!operating || staged.length === 0 || !commitMsg.trim()}>
+            {operating === 'commit' ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            Commit ({staged.length} file{staged.length !== 1 ? 's' : ''})
+          </Button>
+        </div>
+
+        {/* Local Branches */}
+        <Section title="Branches" count={localBranches.length} defaultOpen={false}>
+          {localBranches.map((b) => {
+            const active = b === gitInfo.branch;
+            return (
+              <div key={b} className="flex items-center gap-1.5 px-3 py-0.5 hover:bg-accent/50 group text-[12px]">
+                <GitBranch className={`h-3 w-3 shrink-0 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                <span className={`truncate flex-1 font-mono text-[11px] cursor-pointer ${active ? 'text-primary font-semibold' : ''}`} onClick={() => !active && handleCheckout(b)}>{b}</span>
+                {!active && (
+                  <>
+                    <button onClick={() => { setMergeBranch(b); setMergeModal(true); }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground text-[10px] px-0.5" title={`Merge ${b}`}>
+                      <GitMerge className="h-3 w-3" />
+                    </button>
+                    <button onClick={() => handleDeleteBranch(b)} className="opacity-0 group-hover:opacity-100 text-red-400 text-[10px] px-0.5" title="Delete">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </Section>
+
+        {/* Recent Commits */}
+        <Section title="Recent Commits" count={commits.length} defaultOpen={true}>
+          {commits.map((c, i) => (
+            <div key={c.hash || i} className="px-3 py-1.5 hover:bg-accent/50 cursor-default border-b border-border/30 last:border-0">
+              <div className="flex items-start gap-2">
+                <CircleDot className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] text-foreground leading-snug">{c.message}</p>
+                  <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                    <span>{c.author}</span><span>·</span><span>{formatDate(c.date)}</span>
+                    {(c.insertions > 0 || c.deletions > 0) && (
+                      <span className="ml-auto"><span className="text-green-400">+{c.insertions || 0}</span> <span className="text-red-400">-{c.deletions || 0}</span></span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </Section>
+      </ScrollArea>
+
+      {/* Status footer */}
+      <div className="flex items-center justify-between px-3 py-1.5 border-t border-border text-[10px] text-muted-foreground shrink-0">
+        <div className="flex items-center gap-1.5">
+          <Check className="h-3 w-3 text-primary" />
+          {ahead === 0 && behind === 0 ? 'Up to date' : (<>{ahead > 0 && `${ahead} ahead`}{ahead > 0 && behind > 0 && ', '}{behind > 0 && `${behind} behind`}</>)}
+        </div>
+        <span>{totalChanges} change{totalChanges !== 1 ? 's' : ''}</span>
+      </div>
+    </div>
   );
 }
 
@@ -597,7 +672,7 @@ function InfoTab() {
       await electronAPI.saveEnvironment(projectPath, active, obj);
       setEnvVars(vars);
     } catch {
-      toast({ description: 'Failed to save env vars', variant: 'destructive' });
+      toast('Failed to save env vars', 'error');
     }
   };
 
@@ -679,7 +754,7 @@ function InfoTab() {
                 }
                 actions={
                   <>
-                    <IconBtn icon={Copy} onClick={() => { navigator.clipboard.writeText(v.value); toast({ description: 'Copied' }); }} title="Copy value" />
+                    <IconBtn icon={Copy} onClick={() => { navigator.clipboard.writeText(v.value); toast('Copied', 'success'); }} title="Copy value" />
                     <IconBtn icon={Pencil} onClick={() => { setEditingEnv(v.key); setEditEnvVal(v.value); }} title="Edit" />
                     <IconBtn icon={Trash2} onClick={() => deleteEnvVar(v.key)} title="Delete" className="hover:text-red-400" />
                   </>
@@ -818,7 +893,7 @@ function EmptyState({ text }) {
 }
 
 // ── Tab Button ──────────────────────────────────────────────
-function TabButton({ icon: Icon, label, active, onClick }) {
+function TabButton({ icon: Icon, label, badge, active, onClick }) {
   return (
     <button
       className={`flex items-center gap-1 h-[35px] px-2.5 text-[11px] uppercase tracking-wider font-medium border-b-2 transition-colors ${
@@ -830,19 +905,24 @@ function TabButton({ icon: Icon, label, active, onClick }) {
     >
       <Icon className="h-3.5 w-3.5" />
       {label}
+      {badge > 0 && (
+        <span className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </button>
   );
 }
 
 // ── Main RightPanel ─────────────────────────────────────────
 export function RightPanel() {
-  const { activeRightTab, setActiveRightTab } = useStore();
+  const { activeRightTab, setActiveRightTab, gitStatus } = useStore();
   const tab = activeRightTab || 'context';
+  const changeCount = gitStatus?.changes || 0;
 
   const tabs = [
     { id: 'context', icon: FolderOpen, label: 'Context' },
-    { id: 'tasks', icon: CheckCircle2, label: 'Tasks' },
-    { id: 'activity', icon: Activity, label: 'Activity' },
+    { id: 'sc', icon: GitBranch, label: 'SC', badge: changeCount },
     { id: 'info', icon: Info, label: 'Info' },
   ];
 
@@ -855,6 +935,7 @@ export function RightPanel() {
             key={t.id}
             icon={t.icon}
             label={t.label}
+            badge={t.badge}
             active={tab === t.id}
             onClick={() => setActiveRightTab(t.id)}
           />
@@ -864,8 +945,7 @@ export function RightPanel() {
       {/* Content */}
       <div className="flex-1 overflow-hidden">
         {tab === 'context' && <ContextTab />}
-        {tab === 'tasks' && <TasksTab />}
-        {tab === 'activity' && <ActivityTab />}
+        {tab === 'sc' && <SourceControlTab />}
         {tab === 'info' && <InfoTab />}
       </div>
     </div>

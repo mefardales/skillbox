@@ -30,6 +30,24 @@ export const electronAPI = {
   generateDirectives: (dir) => call('generateDirectives', dir),
   detectStack: (dir) => call('detectStack', dir),
   getGitInfo: (p) => call('getGitInfo', p),
+  getGitStatus: (p) => call('getGitStatus', p),
+  getGitStatusDetailed: (p) => call('getGitStatusDetailed', p),
+  gitCheckout: (p, branch) => call('gitCheckout', p, branch),
+  gitCreateBranch: (p, name, from) => call('gitCreateBranch', p, name, from),
+  gitMerge: (p, branch) => call('gitMerge', p, branch),
+  gitMergeAbort: (p) => call('gitMergeAbort', p),
+  gitDeleteBranch: (p, branch, force) => call('gitDeleteBranch', p, branch, force),
+  gitStage: (p, files) => call('gitStage', p, files),
+  gitStageAll: (p) => call('gitStageAll', p),
+  gitUnstage: (p, files) => call('gitUnstage', p, files),
+  gitUnstageAll: (p) => call('gitUnstageAll', p),
+  gitCommit: (p, msg) => call('gitCommit', p, msg),
+  gitPush: (p, remote, branch) => call('gitPush', p, remote, branch),
+  gitPull: (p, remote, branch) => call('gitPull', p, remote, branch),
+  gitFetch: (p) => call('gitFetch', p),
+  gitDiff: (p, file, staged) => call('gitDiff', p, file, staged),
+  gitStash: (p, action, msg) => call('gitStash', p, action, msg),
+  gitDiscard: (p, files) => call('gitDiscard', p, files),
   getProjectPorts: (p) => call('getProjectPorts', p),
   detectTests: (p) => call('detectTests', p),
 
@@ -55,6 +73,16 @@ export const electronAPI = {
   deleteTeam: (id) => call('deleteTeam', id),
   assignTeamToProject: (p, tid) => call('assignTeamToProject', p, tid),
   unassignTeamFromProject: (p, tid) => call('unassignTeamFromProject', p, tid),
+
+  // Context Sync
+  generateContextSync: (p) => call('generateContextSync', p),
+  getContextPreview: (p) => call('getContextPreview', p),
+
+  // Storage
+  getStorageStats: () => call('getStorageStats'),
+  cleanProjectContext: (p) => call('cleanProjectContext', p),
+  cleanProjectCache: (p) => call('cleanProjectCache', p),
+  cleanAllStaleCache: (days) => call('cleanAllStaleCache', days),
 
   // History
   getHistory: (p) => call('getHistory', p),
@@ -85,12 +113,6 @@ export const electronAPI = {
   // Analysis
   onAnalysisProgress: (cb) => api?.onAnalysisProgress?.(cb),
 
-  // Tasks
-  getTasks: (projectPath) => call('getTasks', projectPath),
-  createTask: (data) => call('createTask', data),
-  updateTask: (id, updates) => call('updateTask', id, updates),
-  deleteTask: (id) => call('deleteTask', id),
-
   // Messages
   getMessages: (projectPath, taskId) => call('getMessages', projectPath, taskId),
   sendMessage: (data) => call('sendMessage', data),
@@ -112,6 +134,7 @@ export const electronAPI = {
   createFile: (p) => call('createFile', p),
   createFolder: (p) => call('createFolder', p),
   renamePath: (old, neu) => call('renamePath', old, neu),
+  movePath: (src, destDir) => call('movePath', src, destDir),
   deletePath: (p) => call('deletePath', p),
   showContextMenu: (template) => call('showContextMenu', template),
 
@@ -143,9 +166,30 @@ export const electronAPI = {
   onExtensionToast: (cb) => api?.onExtensionToast?.(cb),
   onExtensionStatusBar: (cb) => api?.onExtensionStatusBar?.(cb),
 
+  // MCP Server
+  mcpServerStart: (opts) => call('mcpServerStart', opts),
+  mcpServerStop: () => call('mcpServerStop'),
+  mcpServerStatus: () => call('mcpServerStatus'),
+  mcpResolveApproval: (id, approved) => call('mcpResolveApproval', id, approved),
+  mcpGetPendingApprovals: () => call('mcpGetPendingApprovals'),
+  onMcpApprovalRequest: (cb) => api?.onMcpApprovalRequest?.(cb),
+  onMcpServerStatus: (cb) => api?.onMcpServerStatus?.(cb),
+  onMcpToolInvoked: (cb) => api?.onMcpToolInvoked?.(cb),
+
+  // MCP Client
+  mcpClientConnectHttp: (config) => call('mcpClientConnectHttp', config),
+  mcpClientConnectStdio: (config) => call('mcpClientConnectStdio', config),
+  mcpClientDisconnect: (id) => call('mcpClientDisconnect', id),
+  mcpClientCallTool: (connId, tool, args) => call('mcpClientCallTool', connId, tool, args),
+  mcpClientRefreshTools: (connId) => call('mcpClientRefreshTools', connId),
+  mcpClientList: () => call('mcpClientList'),
+  mcpClientAllTools: () => call('mcpClientAllTools'),
+  onMcpConnectionsChanged: (cb) => api?.onMcpConnectionsChanged?.(cb),
+
   // Misc
   openExternal: (url) => call('openExternal', url),
   getDbStats: () => call('getDbStats'),
+  getSystemStats: () => call('getSystemStats'),
   platform: api?.platform || 'unknown',
   onFullscreenChange: (cb) => api?.onFullscreenChange?.(cb),
 };

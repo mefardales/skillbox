@@ -1,13 +1,13 @@
 import {
   FolderOpen,
-  CheckSquare,
   Zap,
-  Users,
-  Clock,
-  Github,
+  Bot,
+  GitBranch,
   Terminal,
   Settings,
   Puzzle,
+  Network,
+  MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useStore } from '@/hooks/useStore'
@@ -19,11 +19,11 @@ import {
 
 const navItems = [
   { id: 'projects', icon: FolderOpen, label: 'Projects' },
-  { id: 'tasks', icon: CheckSquare, label: 'Tasks' },
   { id: 'skills', icon: Zap, label: 'Skills' },
-  { id: 'teams', icon: Users, label: 'Teams' },
-  { id: 'history', icon: Clock, label: 'History' },
-  { id: 'github', icon: Github, label: 'GitHub' },
+  { id: 'teams', icon: Bot, label: 'Agents' },
+  { id: 'git', icon: GitBranch, label: 'Source Control' },
+  { id: 'mcp', icon: Network, label: 'MCP' },
+  { id: 'chat', icon: MessageSquare, label: 'Chat' },
 ]
 
 const bottomItems = [
@@ -31,17 +31,6 @@ const bottomItems = [
   { id: 'settings', icon: Settings, label: 'Settings' },
 ]
 
-function SkillboxLogo() {
-  return (
-    <svg viewBox="0 0 24 24" width={20} height={20} fill="none">
-      <rect width={24} height={24} rx={6} fill="#7c3aed" />
-      <rect x={4} y={4} width={6.5} height={6.5} rx={1.5} fill="#fff" />
-      <rect x={13.5} y={4} width={6.5} height={6.5} rx={1.5} fill="#fff" opacity={0.6} />
-      <rect x={4} y={13.5} width={6.5} height={6.5} rx={1.5} fill="#fff" opacity={0.6} />
-      <rect x={13.5} y={13.5} width={6.5} height={6.5} rx={1.5} fill="#fff" opacity={0.3} />
-    </svg>
-  )
-}
 
 function ActivityBarButton({ icon: Icon, label, isActive, onClick }) {
   return (
@@ -68,15 +57,25 @@ function ActivityBarButton({ icon: Icon, label, isActive, onClick }) {
 }
 
 export function ActivityBar() {
-  const { activeView, setActiveView, terminalPanelOpen, setTerminalPanelOpen } = useStore()
+  const {
+    activeView, setActiveView,
+    projectSidebarOpen, setProjectSidebarOpen,
+    terminalPanelOpen, setTerminalPanelOpen,
+  } = useStore()
+
+  const handleNavClick = (id) => {
+    if (activeView === id) {
+      // Toggle sidebar when clicking the already-active view
+      setProjectSidebarOpen(!projectSidebarOpen)
+    } else {
+      setActiveView(id)
+      // Ensure sidebar is open when switching views
+      if (!projectSidebarOpen) setProjectSidebarOpen(true)
+    }
+  }
 
   return (
-    <aside className="flex h-full w-12 shrink-0 flex-col items-center bg-[#111113] border-r border-border">
-      {/* Logo */}
-      <div className="flex h-12 w-full items-center justify-center">
-        <SkillboxLogo />
-      </div>
-
+    <aside className="flex h-full w-12 shrink-0 flex-col items-center bg-sidebar border-r border-border">
       {/* Main nav */}
       <nav className="flex w-full flex-1 flex-col gap-0.5 py-1">
         {navItems.map((item) => (
@@ -85,7 +84,7 @@ export function ActivityBar() {
             icon={item.icon}
             label={item.label}
             isActive={activeView === item.id}
-            onClick={() => setActiveView(item.id)}
+            onClick={() => handleNavClick(item.id)}
           />
         ))}
       </nav>
@@ -104,7 +103,7 @@ export function ActivityBar() {
             icon={item.icon}
             label={item.label}
             isActive={activeView === item.id}
-            onClick={() => setActiveView(item.id)}
+            onClick={() => handleNavClick(item.id)}
           />
         ))}
       </div>

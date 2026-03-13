@@ -6,7 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useStore } from '@/hooks/useStore';
 import { useToast } from '@/hooks/useToast';
 import { electronAPI } from '@/lib/electronAPI';
-import { catColors, simpleMarkdown } from '@/lib/utils';
+import { catColors } from '@/lib/utils';
+import MarkdownPreview from '@/components/MarkdownPreview';
 
 const categoryColors = {
   frontend: '#f97316',
@@ -116,19 +117,7 @@ export default function SkillDetailPanel({ skill, activeProjectPath, onClose, on
                 Loading...
               </div>
             ) : (
-              <div
-                className="prose prose-invert prose-sm max-w-none text-sm text-foreground
-                  [&_h1]:text-base [&_h1]:font-semibold [&_h1]:mb-3 [&_h1]:mt-4
-                  [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mb-2 [&_h2]:mt-3
-                  [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3
-                  [&_p]:text-xs [&_p]:leading-relaxed [&_p]:mb-2
-                  [&_code]:text-[11px] [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded
-                  [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded-md [&_pre]:text-[11px] [&_pre]:overflow-x-auto
-                  [&_ul]:text-xs [&_ul]:pl-4 [&_ul]:mb-2
-                  [&_ol]:text-xs [&_ol]:pl-4 [&_ol]:mb-2
-                  [&_li]:mb-0.5"
-                dangerouslySetInnerHTML={{ __html: simpleMarkdown(content) }}
-              />
+              <MarkdownPreview content={content} />
             )}
           </div>
         </ScrollArea>

@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   FolderPlus,
-  CheckSquare,
   Zap,
   Users,
   Clock,
@@ -13,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useStore } from '@/hooks/useStore';
+import { useToast } from '@/hooks/useToast';
 import { electronAPI } from '@/lib/electronAPI';
 import { formatDate } from '@/lib/utils';
 
@@ -67,7 +67,7 @@ function ActivityItem({ detail, timestamp }) {
   );
 }
 
-function ProjectRow({ project, taskCount, onClick }) {
+function ProjectRow({ project, onClick }) {
   const stack =
     project.analysis?.stack?.map((s) => s.name).join(', ') || 'Not analyzed';
 
@@ -81,58 +81,21 @@ function ProjectRow({ project, taskCount, onClick }) {
         <p className="text-sm font-medium truncate">{project.name}</p>
         <p className="text-xs text-muted-foreground truncate">{stack}</p>
       </div>
-      <span className="shrink-0 text-xs text-muted-foreground">
-        {taskCount} tasks
-      </span>
     </button>
-  );
-}
-
-function TaskRow({ task, projectName }) {
-  const priorityColors = {
-    high: 'bg-red-500',
-    medium: 'bg-yellow-500',
-    low: 'bg-blue-500',
-  };
-
-  return (
-    <div className="flex items-center gap-2 py-1.5 px-2">
-      <div
-        className={`h-2 w-2 shrink-0 rounded-full ${priorityColors[task.priority] || 'bg-muted-foreground'}`}
-      />
-      <span className="flex-1 text-sm truncate">{task.title}</span>
-      {projectName && (
-        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-          {projectName}
-        </Badge>
-      )}
-      <span className="shrink-0 text-xs text-muted-foreground capitalize">
-        {task.status.replace('_', ' ')}
-      </span>
-    </div>
   );
 }
 
 export default function DashboardView() {
   const {
     projects,
-    tasks,
     teams,
     history,
     activeProjectPath,
     setActiveProjectPath,
     setActiveView,
+    refreshProjects,
   } = useStore();
-
-  const openTasks = tasks.filter((t) => t.status !== 'done');
-
-  const totalMembers = teams.reduce((acc, t) => {
-    const members =
-      typeof t.members === 'string'
-        ? JSON.parse(t.members)
-        : t.members || [];
-    return acc + members.length;
-  }, 0);
+  const { toast } = useToast();
 
   const skillsCount = projects.reduce(
     (acc, p) => acc + (p.skills?.length || 0),
@@ -142,12 +105,6 @@ export default function DashboardView() {
   const activeProject = activeProjectPath
     ? projects.find((p) => p.path === activeProjectPath)
     : null;
-
-  const activeProjectTasks = activeProject
-    ? tasks.filter(
-        (t) => t.project_path === activeProject.path && t.status !== 'done'
-      )
-    : [];
 
   const handleSelectProject = useCallback(
     (path) => {
@@ -159,11 +116,22 @@ export default function DashboardView() {
 
   const handleAddProject = useCallback(async () => {
     const folder = await electronAPI.browseFolder();
-    if (folder) {
-      await electronAPI.addProject(folder);
+    if (!folder) return;
+    toast('Loading project...', 'info');
+    try {
+      const result = await electronAPI.addProject(folder);
+      await refreshProjects();
       setActiveProjectPath(folder);
+      if (result?.isNew === false) {
+        toast('Project already in workspace', 'info');
+      } else {
+        const name = folder.split(/[/\\]/).pop();
+        toast(`Added "${name}" to workspace`, 'success');
+      }
+    } catch (err) {
+      toast(`Failed to add project: ${err.message || err}`, 'error');
     }
-  }, [setActiveProjectPath]);
+  }, [setActiveProjectPath, refreshProjects, toast]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -181,12 +149,7 @@ export default function DashboardView() {
               label="Projects"
               value={projects.length}
             />
-            <StatCard
-              icon={CheckSquare}
-              label="Active Tasks"
-              value={openTasks.length}
-            />
-            <StatCard icon={Users} label="Team Members" value={totalMembers} />
+            <StatCard icon={Users} label="Agents" value={teams.length} />
             <StatCard icon={Zap} label="Skills" value={skillsCount} />
           </div>
 
@@ -200,15 +163,6 @@ export default function DashboardView() {
             >
               <FolderPlus className="mr-1.5 h-3 w-3" />
               Add Project
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setActiveView('tasks')}
-            >
-              <CheckSquare className="mr-1.5 h-3 w-3" />
-              View Tasks
             </Button>
             <Button
               variant="outline"
@@ -250,23 +204,11 @@ export default function DashboardView() {
                     <ArrowRight className="ml-1 h-3 w-3" />
                   </Button>
                 </div>
-                {activeProjectTasks.length > 0 && (
-                  <div className="mt-2 space-y-0.5">
-                    {activeProjectTasks.slice(0, 3).map((t) => (
-                      <TaskRow key={t.id} task={t} />
-                    ))}
-                    {activeProjectTasks.length > 3 && (
-                      <p className="text-xs text-muted-foreground pl-4 pt-1">
-                        +{activeProjectTasks.length - 3} more tasks
-                      </p>
-                    )}
-                  </div>
-                )}
               </CardContent>
             </Card>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             {/* Recent projects */}
             <Card>
               <CardHeader className="px-4 py-2.5">
@@ -282,56 +224,18 @@ export default function DashboardView() {
                   </p>
                 ) : (
                   <div className="space-y-0.5">
-                    {projects.slice(0, 5).map((p) => {
-                      const taskCount = tasks.filter(
-                        (t) =>
-                          t.project_path === p.path && t.status !== 'done'
-                      ).length;
-                      return (
-                        <ProjectRow
-                          key={p.path}
-                          project={p}
-                          taskCount={taskCount}
-                          onClick={() => handleSelectProject(p.path)}
-                        />
-                      );
-                    })}
+                    {projects.slice(0, 5).map((p) => (
+                      <ProjectRow
+                        key={p.path}
+                        project={p}
+                        onClick={() => handleSelectProject(p.path)}
+                      />
+                    ))}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Open tasks */}
-            <Card>
-              <CardHeader className="px-4 py-2.5">
-                <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <CheckSquare className="h-3 w-3" />
-                  Open Tasks
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-2 pb-3 pt-0">
-                {openTasks.length === 0 ? (
-                  <p className="text-xs text-muted-foreground px-2 py-4 text-center">
-                    No open tasks.
-                  </p>
-                ) : (
-                  <div className="space-y-0.5">
-                    {openTasks.slice(0, 8).map((t) => {
-                      const proj = projects.find(
-                        (p) => p.path === t.project_path
-                      );
-                      return (
-                        <TaskRow
-                          key={t.id}
-                          task={t}
-                          projectName={proj?.name}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Activity feed */}

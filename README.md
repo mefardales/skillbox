@@ -1,19 +1,22 @@
 # Skillbox
 
-**Skill Pack for your development environment.**
+**Mission control for small dev teams (2-12 people).**
 
-Skillbox is a curated registry of AI coding skills that work across Claude Code, Cursor, Codex, and 30+ tools that support the [Agent Skills](https://agentskills.io) open standard. Install skills with one command and make your AI assistant an expert in any technology.
+Skillbox is a project-centered collaboration workspace that coordinates projects, AI agents, and coding skills. It is AI-agnostic and tool-agnostic — works with Claude Code, Cursor, GitHub Copilot, Windsurf, and any Agent Skills-compatible tool.
 
 ## Why Skillbox?
 
-AI coding assistants are powerful, but they work better with context. Skills give them **expert-level instructions** for specific technologies — turning a general assistant into a React specialist, a FastAPI architect, or a Docker expert.
+AI coding assistants are powerful, but they work better with context. Skillbox gives them **expert-level instructions** for specific technologies — turning a general assistant into a React specialist, a FastAPI architect, or a Docker expert. Plus a full project management workspace to coordinate it all.
 
 - **One command install** — `npx skillbox install frontend/react-components`
 - **Works everywhere** — Claude Code, Cursor, Codex, and any Agent Skills compatible tool
+- **Desktop App** — Full IDE-style workspace (Electron + React + shadcn/ui)
 - **Visual GUI** — VSCode/Cursor extension with a browsable skill box panel
 - **Smart recommendations** — Auto-detects your project stack and suggests relevant skills
-- **Search bar** — Find any skill instantly from the sidebar or CLI
-- **Community-driven** — Open source registry anyone can contribute to
+- **AI Agents** — Create agents with roles (Backend Dev, DevOps, QA, etc.) and assign skills
+- **Context Sync** — Auto-generate compact context (~120 tokens) for any AI model
+- **Integrated Git Client** — Full source control: stage, commit, push, pull, branch, merge, stash, diff
+- **File Explorer** — Full tree with context menus, inline rename, create, delete, copy path
 - **Zero config** — Auto-detects your tools and installs to the right place
 
 ## Quick Start
@@ -51,7 +54,9 @@ npm run dev        # build + DevTools
 npm run dev:vite   # hot reload with Vite dev server
 ```
 
-A multi-panel IDE-style workspace built with React, Tailwind CSS, and shadcn/ui:
+## Desktop App
+
+A multi-panel IDE-style workspace built with React 19, Vite 5, Tailwind CSS v3, and shadcn/ui:
 
 ```
 ┌──────┬───────────┬──────────────────────┬──────────┐
@@ -59,30 +64,110 @@ A multi-panel IDE-style workspace built with React, Tailwind CSS, and shadcn/ui:
 │  c   │  Sidebar  │   (views + terminal) │  Panel   │
 │  t   │ resizable │                      │ resizable│
 │  i   │           │                      │  [tabs]  │
-│  v   │  search   │  Dashboard / Tasks   │  Context │
-│  i   │  proj-1   │  Teams / Skills      │  Tasks   │
-│  t   │  proj-2   │  Settings / GitHub   │  Activity│
-│  y   │  proj-3   │──────────────────────│  Info    │
-│ Bar  │           │  Terminal Panel      │          │
-│ 48px │           │  (resize/maximize)   │          │
+│  v   │  search   │  Dashboard / Project │  Context │
+│  i   │  proj-1   │  Agents / Skills     │  SC/Git  │
+│  t   │  proj-2   │  Source Control      │  Info    │
+│  y   │  proj-3   │  Settings / GitHub   │          │
+│ Bar  │           │──────────────────────│          │
+│ 48px │  tree     │  Terminal + Logs     │          │
 └──────┴───────────┴──────────────────────┴──────────┘
 ```
 
-Features:
-- **React + shadcn/ui** — Modern component architecture with Radix UI primitives
-- **Resizable Panels** — Drag borders to resize sidebar, right panel, and terminal
-- **Multi-Panel Layout** — Activity bar, collapsible project sidebar, main workspace, right info panel
-- **Skill Registry** — Browse, create custom skills, import from Git repos
-- **Project Management** — Connect folders, auto-detect stack, multi-environment (DEV/QA/PROD)
-- **Kanban Tasks** — Drag-and-drop task board with priority levels and project assignment
+### Core Features
+
+- **Multi-Panel Layout** — Activity bar (48px), collapsible project sidebar (resizable 120-500px), main workspace, right info panel (resizable 140-600px)
+- **Resizable Panels** — Drag borders to resize, snap-to-close, drag-to-open
+- **Keyboard Shortcuts** — `Ctrl+B` toggle sidebar, `Ctrl+Shift+P` command palette, `F2` rename, `Delete` key
+
+### File Explorer (Project Sidebar)
+
+- **Full file tree** — Lazy-loaded, expand/collapse directories on demand
+- **Native context menus** — Right-click on files/folders for New File, New Folder, Rename, Delete, Copy Path, Copy Relative Path, Reveal in File Explorer
+- **Inline rename** — F2 or right-click > Rename, edits name in-place with smart selection (filename without extension)
+- **Create files/folders** — Via context menu, toolbar buttons, or keyboard
+- **Delete with confirmation** — Modal confirmation before permanent deletion
+- **Copy Path / Relative Path** — Copy to clipboard with toast notification
+- **Reveal in File Explorer** — Open OS file manager at location
+- **Project management** — Right-click project root: Refresh, Remove from Workspace
+- **Search/filter** — Filter projects by name with clear button
+- **40+ file type icons** — Color-coded by extension (JS, TS, Python, Rust, Go, etc.)
+
+### Integrated Git Client (Source Control)
+
+Full GitHub Desktop-style git integration accessible from Activity Bar and Right Panel:
+
+- **Branch management** — Switch branches, create new branches (from any base), delete branches (with force option)
+- **Staging** — Stage/unstage individual files or all at once
+- **Commit** — Commit with message, view commit history with hashes
+- **Push / Pull / Fetch** — Sync with remote repositories
+- **Merge** — Merge branches with conflict detection and abort capability
+- **Stash** — Push/pop/list/drop stash entries
+- **Diff viewer** — Color-coded diff display for staged and unstaged changes
+- **Discard changes** — Revert individual files with confirmation
+- **Detached HEAD support** — Graceful handling of detached HEAD state
+
+### AI Agents
+
+- Create agents with predefined roles: Backend Developer, Frontend Developer, Full-Stack Developer, DevOps Engineer, QA/Testing, Data Engineer, Code Reviewer, Security Analyst, General Assistant
+- Assign skills from the registry to each agent
+- Assign multiple agents to each project, forming a team
+- Agent cards with role badges, skills list, and linked projects
+
+### Context Sync (AI-Agnostic)
+
+Auto-generate compact context (~120 tokens) for any AI model:
+
+```
+Source: SQLite DB (projects, agents, skills)
+    → context.json (structured, internal)
+    → CLAUDE.md / .cursorrules / copilot.md / AGENTS.md (per AI tool)
+```
+
+Supported tools: Claude Code, Cursor, GitHub Copilot, Windsurf, Generic (AGENTS.md)
+
+### Skill Registry
+
+- Browse, search, and install skills from the built-in registry
+- Create custom skills with markdown editor
+- Import skills from Git repositories
+- Categories: frontend, backend, data, devops, testing, general
+
+### Multi-Model Chat
+
+Native chat interface with multi-provider LLM support:
+
+- **5 providers** — Anthropic (Claude), OpenAI (GPT-4o), Google (Gemini), xAI (Grok), Ollama (local)
+- **Custom models** — Add any model ID to any provider, persisted across sessions
+- **Agent mode** — Select an agent from the dropdown to chat with it — context-aware responses (knows projects, skills, role)
+- **MCP tool integration** — "List my MCP tools" renders available tools with read-only / approval badges
+- **Multi-model compare** — Send same prompt to two models in parallel, compare responses side-by-side
+- **Dynamic quick replies** — Context-aware suggestions based on active project, git branch, MCP connections
+- **Tool approval flow** — Sensitive operations require explicit approval before execution
+- **Conversation management** — Create, switch, delete conversations with message persistence in SQLite
+
+### MCP Server Presets (Discover)
+
+Curated collection of recommended MCP servers with one-click connect:
+
+- **8 presets** — GitHub, Supabase, Playwright, Vercel, Notion, Stripe, Slack, Tavily
+- **Discover tab** — Browse presets with search, category filters, and detail panel
+- **Auth guides** — Step-by-step instructions for each server's authentication
+- **Tool discovery** — See available tools before connecting
+- **One-click connect** — Pre-fills connection form and switches to Server tab
+
+### Other Features
+
 - **GitHub Integration** — Connect with PAT, browse repos, clone, import skills
-- **Integrated Terminal** — Resizable bottom panel with xterm.js and project context detection
-- **Agent Teams** — Create teams with specialized skill sets, assign to projects
-- **Right Panel** — VS Code-style collapsible sections: Context files, Tasks (CRUD), Activity (git), Info (env vars, services, deps, scripts)
-- **Keyboard Shortcuts** — `Ctrl+B` toggle sidebar, panel collapse at responsive breakpoints
+- **Integrated Terminal** — Resizable bottom panel with xterm.js, split support, project context detection
+- **Right Panel** — 3 tabs: Context preview (with token count), Source Control (full git), Info (env vars, services, deps, scripts)
+- **Toast Notifications** — Auto-logged to platform activity log
+- **Status Bar** — CPU, memory, git branch, GitHub status, DB size, uptime, clock
+- **Command Palette** — Quick access to all actions
+- **Extensions** — Install VSIX extensions, activate/deactivate, webview support
 - **Local SQLite Database** — All data persisted locally via sql.js (no cloud dependency)
+- **Storage Management** — Per-project storage stats, clean cache/context, stale cleanup (>30 days)
 - **Real-time Analysis** — Progress bar during project analysis with step-by-step feedback
-- **Auto-generated Context** — AI-readable context files in `.skillbox/project/context/`
+- **Cross-platform** — Windows, macOS, Linux
 
 ### VSCode / Cursor Extension
 
@@ -169,20 +254,20 @@ When you install a skill, Skillbox copies it to the right location for each dete
 
 For project-local installs (`--project`), skills go into `.claude/skills/`, `.cursor/skills/`, etc. in your project root.
 
-## CLI Reference
+## Tech Stack
 
-```
-skillbox install <category/skill>       Install a skill
-skillbox install <skill> --project      Install to current project only
-skillbox install <skill> --tool cursor  Install to a specific tool
-skillbox remove <category/skill>        Remove an installed skill
-skillbox list [category]                List available skills
-skillbox search <query>                 Search skills by name, tag, or description
-skillbox info <category/skill>          Show full skill details
-skillbox detect                         Detect installed AI tools
-skillbox recommend                      Auto-detect stack and recommend skills
-skillbox recommend --dir ./my-project   Scan a specific directory
-```
+| Technology | Purpose |
+|-----------|---------|
+| **Electron** | Desktop shell |
+| **React 19** | UI framework |
+| **Vite 5** | Build tool and dev server |
+| **Tailwind CSS v3** | Utility-first styling with PostCSS |
+| **shadcn/ui** | Radix UI primitives with CVA variants |
+| **sql.js** | SQLite in-process (no native bindings) |
+| **@lydell/node-pty** | Terminal emulation |
+| **xterm.js v5** | Terminal rendering |
+| **lucide-react** | Icon library |
+| **Monaco Editor** | Code viewer / diff |
 
 ## Project Structure
 
@@ -196,19 +281,19 @@ skillbox/
     testing/                 # (2)
     general/                 # (2)
     registry.json            # Auto-generated index
-  desktop/                   # Electron desktop app (v0.5.0)
-    src/main.js              # Main process (IPC, SQLite, terminal, GitHub)
+  desktop/                   # Electron desktop app
+    src/main.js              # Main process (IPC, SQLite, Git, terminal, GitHub, file ops)
     src/preload.js           # Context bridge (window.skillbox)
     src/ui/                  # React UI (Vite + Tailwind + shadcn/ui)
-      main.jsx               # Entry point
+      main.jsx               # Entry point (StoreProvider + ToastProvider)
       App.jsx                # Layout shell with resizable panels
-      hooks/                 # useStore (context-based), useToast
-      lib/                   # electronAPI bridge, utils
-      layouts/               # ActivityBar
-      panels/                # ProjectSidebar, RightPanel, TerminalPanel
-      views/                 # Dashboard, Tasks, Skills, Teams, Settings, etc.
-      components/            # Modals (Task, Team, Skill, Env, GitImport)
-      components/ui/         # shadcn/ui primitives (16 components)
+      hooks/                 # useStore (context-based global state), useToast
+      lib/                   # electronAPI bridge, utils (cn, formatDate, simpleMarkdown)
+      layouts/               # ActivityBar (48px icon sidebar), TitleBar, StatusBar
+      panels/                # ProjectSidebar (file explorer), RightPanel (3-tab), TerminalPanel
+      views/                 # Dashboard, ProjectDetail, Skills, Teams/Agents, Git, GitHub, Settings, Extensions, Chat, MCP
+      components/            # AgentModal, SkillDetailPanel, CommandPalette, MarkdownPreview, MonacoViewer
+      components/ui/         # shadcn/ui primitives (button, input, dialog, tabs, select, etc.)
     dist-ui/                 # Vite build output
     vite.config.js           # Vite config (root: src/ui, output: dist-ui)
     tailwind.config.js       # Tailwind v3 + shadcn/ui color system
@@ -229,14 +314,29 @@ The desktop app stores all user data locally in SQLite:
 - **macOS**: `~/Library/Application Support/skillbox-desktop/skillbox-data/skillbox.db`
 - **Linux**: `~/.config/skillbox-desktop/skillbox-data/skillbox.db`
 
+## CLI Reference
+
+```
+skillbox install <category/skill>       Install a skill
+skillbox install <skill> --project      Install to current project only
+skillbox install <skill> --tool cursor  Install to a specific tool
+skillbox remove <category/skill>        Remove an installed skill
+skillbox list [category]                List available skills
+skillbox search <query>                 Search skills by name, tag, or description
+skillbox info <category/skill>          Show full skill details
+skillbox detect                         Detect installed AI tools
+skillbox recommend                      Auto-detect stack and recommend skills
+skillbox recommend --dir ./my-project   Scan a specific directory
+```
+
 ## Roadmap
 
-- **Skillbox Cloud** — Remote access service for syncing skills, projects, and team configurations across machines. Access your workspace from anywhere via web browser with real-time collaboration.
-- **Skill Marketplace** — Community-driven skill sharing and discovery platform.
-- **Real-time Collaboration** — Multi-user team editing with live sync.
-- **CI/CD Integration** — Auto-deploy skills to projects on push.
-- **Skill Analytics** — Track which skills are most effective across projects.
-- **Mobile Companion** — Monitor projects and manage skills from your phone.
+- **Skillbox Cloud** — Remote access service for syncing skills, projects, and team configurations across machines
+- **Skill Marketplace** — Community-driven skill sharing and discovery platform
+- **Real-time Collaboration** — Multi-user team editing with live sync
+- **CI/CD Integration** — Auto-deploy skills to projects on push
+- **Skill Analytics** — Track which skills are most effective across projects
+- **Mobile Companion** — Monitor projects and manage skills from your phone
 
 ## Contributing
 

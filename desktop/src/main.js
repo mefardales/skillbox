@@ -2,9 +2,12 @@ const { app, BrowserWindow, ipcMain, dialog, Menu, shell, protocol } = require('
 const path = require('node:path');
 const fs = require('node:fs');
 const { execSync } = require('node:child_process');
+const os = require('node:os');
 const crypto = require('node:crypto');
 const pty = require('@lydell/node-pty');
 const { ExtensionHost } = require('./extension-host/host');
+const mcpServer = require('./mcp-server');
+const mcpClient = require('./mcp-client');
 
 let mainWindow;
 let extensionHost;
@@ -12,6 +15,13 @@ let extensionHost;
 // ── Paths ───────────────────────────────────────────────────────
 const SKILLS_ROOT = path.resolve(__dirname, '..', '..', 'skills');
 const REGISTRY_PATH = path.join(SKILLS_ROOT, 'registry.json');
+const AI_TOOL_FILES = {
+  claude: 'CLAUDE.md',
+  cursor: '.cursorrules',
+  copilot: '.github/copilot-instructions.md',
+  windsurf: '.windsurfrules',
+  generic: 'AGENTS.md',
+};
 
 // ── Database (sql.js) ───────────────────────────────────────────
 let db;
@@ -402,6 +412,23 @@ ipcMain.handle('remove-project', async (_e, dirPath) => {
   const project = dbGet('SELECT name FROM projects WHERE path = ?', [dirPath]);
   dbRun('DELETE FROM projects WHERE path = ?', [dirPath]);
   if (project) addHistory('project_removed', `Disconnected project: ${project.name}`, dirPath);
+
+  // Clean context files if enabled
+  const s1 = { ...DEFAULT_SETTINGS, ...readUserSettings() };
+  if (s1['context.cleanOnRemove']) {
+    try {
+      const skillboxDir = path.join(dirPath, '.skillbox');
+      if (fs.existsSync(skillboxDir)) fs.rmSync(skillboxDir, { recursive: true, force: true });
+      const aiTools = s1['context.aiTools'] || ['claude'];
+      for (const tool of aiTools) {
+        const fileName = AI_TOOL_FILES[tool];
+        if (!fileName) continue;
+        const fp = path.join(dirPath, fileName);
+        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+      }
+    } catch {}
+  }
+
   return loadProjects();
 });
 
@@ -620,6 +647,30 @@ ipcMain.handle('assign-team-to-project', async (_e, projectPath, teamId) => {
     dbRun('UPDATE projects SET teams = ? WHERE path = ?', [JSON.stringify(teams), projectPath]);
     const team = dbGet('SELECT name FROM teams WHERE id = ?', [teamId]);
     addHistory('team_assigned', `Assigned team "${team?.name}" to project`, projectPath);
+
+    // Auto-sync context if enabled
+    const s1 = { ...DEFAULT_SETTINGS, ...readUserSettings() };
+    if (s1['context.autoSync']) {
+      try {
+        const proj = projectRowToObj(dbGet('SELECT * FROM projects WHERE path = ?', [projectPath]));
+        const allT = loadTeams();
+        const reg = (() => { try { return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8')); } catch { return { skills: [] }; } })();
+        const ctx = generateCompactContext(proj, allT, reg);
+        const markdown = contextToMarkdown(ctx);
+        const skillboxDir = path.join(projectPath, '.skillbox');
+        if (!fs.existsSync(skillboxDir)) fs.mkdirSync(skillboxDir, { recursive: true });
+        fs.writeFileSync(path.join(skillboxDir, 'context.json'), JSON.stringify(ctx, null, 2), 'utf8');
+        const aiTools = s1['context.aiTools'] || ['claude'];
+        for (const tool of aiTools) {
+          const fileName = AI_TOOL_FILES[tool];
+          if (!fileName) continue;
+          const fp = path.join(projectPath, fileName);
+          const dir = path.dirname(fp);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(fp, markdown, 'utf8');
+        }
+      } catch {}
+    }
   }
   return loadProjects();
 });
@@ -629,6 +680,31 @@ ipcMain.handle('unassign-team-from-project', async (_e, projectPath, teamId) => 
   if (!row) return loadProjects();
   const teams = JSON.parse(row.teams || '[]').filter(t => t !== teamId);
   dbRun('UPDATE projects SET teams = ? WHERE path = ?', [JSON.stringify(teams), projectPath]);
+
+  // Auto-sync context if enabled
+  const s1 = { ...DEFAULT_SETTINGS, ...readUserSettings() };
+  if (s1['context.autoSync']) {
+    try {
+      const proj = projectRowToObj(dbGet('SELECT * FROM projects WHERE path = ?', [projectPath]));
+      const allT = loadTeams();
+      const reg = (() => { try { return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8')); } catch { return { skills: [] }; } })();
+      const ctx = generateCompactContext(proj, allT, reg);
+      const markdown = contextToMarkdown(ctx);
+      const skillboxDir = path.join(projectPath, '.skillbox');
+      if (!fs.existsSync(skillboxDir)) fs.mkdirSync(skillboxDir, { recursive: true });
+      fs.writeFileSync(path.join(skillboxDir, 'context.json'), JSON.stringify(ctx, null, 2), 'utf8');
+      const aiTools = s1['context.aiTools'] || ['claude'];
+      for (const tool of aiTools) {
+        const fileName = AI_TOOL_FILES[tool];
+        if (!fileName) continue;
+        const fp = path.join(projectPath, fileName);
+        const dir = path.dirname(fp);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(fp, markdown, 'utf8');
+      }
+    } catch {}
+  }
+
   return loadProjects();
 });
 
@@ -1271,6 +1347,14 @@ ipcMain.handle('rename-path', async (_e, oldPath, newPath) => {
   fs.renameSync(oldPath, newPath);
 });
 
+ipcMain.handle('move-path', async (_e, srcPath, destDir) => {
+  const name = path.basename(srcPath);
+  const dest = path.join(destDir, name);
+  if (fs.existsSync(dest)) throw new Error(`"${name}" already exists in destination`);
+  fs.renameSync(srcPath, dest);
+  return dest;
+});
+
 ipcMain.handle('delete-path', async (_e, targetPath) => {
   const stat = fs.statSync(targetPath);
   if (stat.isDirectory()) {
@@ -1311,6 +1395,51 @@ ipcMain.handle('get-db-stats', async () => {
   let dbSize = 0;
   try { dbSize = fs.statSync(dbPath).size; } catch {}
   return { projects, teams, history, customSkills: skills, dbSizeBytes: dbSize };
+});
+
+ipcMain.handle('get-system-stats', () => {
+  const cpus = os.cpus();
+  // Average CPU usage across cores (idle vs total)
+  let totalIdle = 0, totalTick = 0;
+  for (const cpu of cpus) {
+    for (const type of Object.keys(cpu.times)) totalTick += cpu.times[type];
+    totalIdle += cpu.times.idle;
+  }
+  const cpuUsage = Math.round(((totalTick - totalIdle) / totalTick) * 100);
+
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = totalMem - freeMem;
+
+  // Count active terminal sessions
+  const activeTerminals = terminalProcesses ? terminalProcesses.size : 0;
+
+  // Git branch of active project (best-effort)
+  let gitBranch = null;
+  try {
+    const projects = loadProjects();
+    if (projects.length > 0) {
+      const headPath = path.join(projects[0].path, '.git', 'HEAD');
+      if (fs.existsSync(headPath)) {
+        const head = fs.readFileSync(headPath, 'utf8').trim();
+        gitBranch = head.startsWith('ref: refs/heads/') ? head.replace('ref: refs/heads/', '') : head.slice(0, 8);
+      }
+    }
+  } catch {}
+
+  return {
+    cpuUsage,
+    memUsed: usedMem,
+    memTotal: totalMem,
+    platform: process.platform,
+    arch: process.arch,
+    nodeVersion: process.versions.node,
+    electronVersion: process.versions.electron,
+    uptime: Math.floor(process.uptime()),
+    hostname: os.hostname(),
+    activeTerminals,
+    gitBranch,
+  };
 });
 
 // ── IPC: Tasks ──────────────────────────────────────────────────
@@ -1411,6 +1540,14 @@ const DEFAULT_SETTINGS = {
   "workbench.activityBar.visible": true,
   "general.language": "en",
   "extensions.autoUpdate": true,
+  "context.aiTools": ["claude"],
+  "context.autoSync": true,
+  "context.maxCacheAgeDays": 30,
+  "context.cleanOnRemove": true,
+  "mcp.serverEnabled": false,
+  "mcp.serverPort": 0,
+  "mcp.serverToken": "",
+  "mcp.savedConnections": [],
 };
 
 function getSettingsPath() { return path.join(getDataDir(), 'settings.json'); }
@@ -1914,13 +2051,22 @@ ipcMain.handle('get-git-info', (_e, projectPath) => {
   };
 
   try {
-    const branch = run('git rev-parse --abbrev-ref HEAD');
-    if (!branch) return { error: 'Not a git repository' };
+    const rawBranch = run('git rev-parse --abbrev-ref HEAD');
+    if (!rawBranch) return { error: 'Not a git repository' };
+
+    // Detect detached HEAD — display name differs from real ref used for git ops
+    const detached = rawBranch === 'HEAD';
+    let branch = rawBranch;
+    let displayBranch = rawBranch;
+    if (detached) {
+      const shortHash = run('git rev-parse --short HEAD');
+      displayBranch = shortHash ? `detached @ ${shortHash}` : 'HEAD (detached)';
+    }
 
     const localBranches = run('git branch --format="%(refname:short)"').split('\n').filter(Boolean);
     const remoteBranches = run('git branch -r --format="%(refname:short)"').split('\n').filter(Boolean);
 
-    const logRaw = run('git log -20 --format="%H|%an|%aI|%s" --shortstat');
+    const logRaw = run('git log -25 --format="%H|%an|%aI|%s" --shortstat');
     const commits = [];
     const lines = logRaw.split('\n');
     for (let i = 0; i < lines.length; i++) {
@@ -1942,15 +2088,328 @@ ipcMain.handle('get-git-info', (_e, projectPath) => {
     const totalCommits = parseInt(run('git rev-list --count HEAD') || '0', 10);
     const remoteUrl = run('git remote get-url origin');
 
+    // Ahead/behind remote tracking branch (skip for detached HEAD — no upstream)
+    let ahead = 0, behind = 0;
+    if (!detached) {
+      const tracking = run(`git rev-parse --abbrev-ref ${branch}@{upstream}`);
+      if (tracking) {
+        const ab = run(`git rev-list --left-right --count ${branch}...${tracking}`);
+        if (ab) {
+          const parts = ab.split(/\s+/);
+          ahead = parseInt(parts[0], 10) || 0;
+          behind = parseInt(parts[1], 10) || 0;
+        }
+      }
+    }
+
+    // Last fetch/pull time
+    let lastFetch = null;
+    try {
+      const fetchHeadPath = require('node:path').join(projectPath, '.git', 'FETCH_HEAD');
+      if (require('node:fs').existsSync(fetchHeadPath)) {
+        lastFetch = require('node:fs').statSync(fetchHeadPath).mtime.toISOString();
+      }
+    } catch {}
+
     return {
-      branch,
+      branch: displayBranch,
+      detached,
       branches: { local: localBranches, remote: remoteBranches },
       commits,
       totalCommits,
       remoteUrl,
+      ahead,
+      behind,
+      lastFetch,
     };
   } catch (e) {
     return { error: e.message };
+  }
+});
+
+// ── Git Status (change count) ────────────────────────────────────
+
+ipcMain.handle('get-git-status', (_e, projectPath) => {
+  const run = (cmd) => {
+    try {
+      return execSync(cmd, { cwd: projectPath, encoding: 'utf-8', timeout: 10000 }).trim();
+    } catch { return ''; }
+  };
+  try {
+    const branch = run('git rev-parse --abbrev-ref HEAD');
+    if (!branch) return { error: 'Not a git repo', changes: 0, files: [] };
+
+    const statusRaw = run('git status --porcelain');
+    const files = statusRaw ? statusRaw.split('\n').filter(Boolean).map(line => ({
+      status: line.substring(0, 2).trim(),
+      file: line.substring(3),
+    })) : [];
+
+    return { branch, changes: files.length, files };
+  } catch (e) {
+    return { error: e.message, changes: 0, files: [] };
+  }
+});
+
+// ── Git Checkout (switch branch) ─────────────────────────────────
+
+ipcMain.handle('git-checkout', async (_e, projectPath, branchName) => {
+  try {
+    execSync(`git checkout "${branchName}"`, { cwd: projectPath, encoding: 'utf-8', timeout: 15000 });
+    const newBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: projectPath, encoding: 'utf-8', timeout: 5000 }).trim();
+    return { ok: true, branch: newBranch };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+// ── Git Create Branch ────────────────────────────────────────────
+
+ipcMain.handle('git-create-branch', (_e, projectPath, branchName, fromRef) => {
+  try {
+    const base = fromRef ? `"${fromRef}"` : '';
+    execSync(`git checkout -b "${branchName}" ${base}`.trim(), { cwd: projectPath, encoding: 'utf-8', timeout: 15000 });
+    const newBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: projectPath, encoding: 'utf-8', timeout: 5000 }).trim();
+    return { ok: true, branch: newBranch };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+// ── Git Merge ────────────────────────────────────────────────────
+
+ipcMain.handle('git-merge', (_e, projectPath, branchName) => {
+  try {
+    const result = execSync(`git merge "${branchName}"`, { cwd: projectPath, encoding: 'utf-8', timeout: 60000 });
+    return { ok: true, output: result };
+  } catch (e) {
+    const err = e.stderr || e.stdout || e.message;
+    const hasConflict = err.includes('CONFLICT') || err.includes('Automatic merge failed');
+    return { ok: false, error: err, conflict: hasConflict };
+  }
+});
+
+// ── Git Merge Abort ──────────────────────────────────────────────
+
+ipcMain.handle('git-merge-abort', (_e, projectPath) => {
+  try {
+    execSync('git merge --abort', { cwd: projectPath, encoding: 'utf-8', timeout: 10000 });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+// ── Git Delete Branch ────────────────────────────────────────────
+
+ipcMain.handle('git-delete-branch', (_e, projectPath, branchName, force) => {
+  try {
+    const flag = force ? '-D' : '-d';
+    execSync(`git branch ${flag} "${branchName}"`, { cwd: projectPath, encoding: 'utf-8', timeout: 10000 });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+// ── Git Stage / Unstage ──────────────────────────────────────────
+
+ipcMain.handle('git-stage', (_e, projectPath, files) => {
+  try {
+    const fileList = Array.isArray(files) ? files : [files];
+    for (const f of fileList) {
+      execSync(`git add -- "${f}"`, { cwd: projectPath, encoding: 'utf-8', timeout: 10000 });
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+ipcMain.handle('git-stage-all', (_e, projectPath) => {
+  try {
+    execSync('git add -A', { cwd: projectPath, encoding: 'utf-8', timeout: 10000 });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+ipcMain.handle('git-unstage', (_e, projectPath, files) => {
+  try {
+    const fileList = Array.isArray(files) ? files : [files];
+    for (const f of fileList) {
+      execSync(`git reset HEAD -- "${f}"`, { cwd: projectPath, encoding: 'utf-8', timeout: 10000 });
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+ipcMain.handle('git-unstage-all', (_e, projectPath) => {
+  try {
+    execSync('git reset HEAD', { cwd: projectPath, encoding: 'utf-8', timeout: 10000 });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+// ── Git Commit ───────────────────────────────────────────────────
+
+ipcMain.handle('git-commit', (_e, projectPath, message) => {
+  try {
+    // Use stdin to avoid shell escaping issues with commit messages
+    const result = execSync('git commit -m "' + message.replace(/"/g, '\\"') + '"', {
+      cwd: projectPath, encoding: 'utf-8', timeout: 30000,
+    });
+    const hash = execSync('git rev-parse --short HEAD', { cwd: projectPath, encoding: 'utf-8', timeout: 5000 }).trim();
+    return { ok: true, hash, output: result };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+// ── Git Push / Pull / Fetch ──────────────────────────────────────
+
+ipcMain.handle('git-push', (_e, projectPath, remote, branch) => {
+  try {
+    const r = remote || 'origin';
+    const b = branch || '';
+    const cmd = b ? `git push ${r} ${b}` : `git push`;
+    const result = execSync(cmd, { cwd: projectPath, encoding: 'utf-8', timeout: 60000 });
+    return { ok: true, output: result };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+ipcMain.handle('git-pull', (_e, projectPath, remote, branch) => {
+  try {
+    const r = remote || 'origin';
+    const b = branch || '';
+    const cmd = b ? `git pull ${r} ${b}` : `git pull`;
+    const result = execSync(cmd, { cwd: projectPath, encoding: 'utf-8', timeout: 60000 });
+    return { ok: true, output: result };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+ipcMain.handle('git-fetch', (_e, projectPath) => {
+  try {
+    const result = execSync('git fetch --all --prune', { cwd: projectPath, encoding: 'utf-8', timeout: 60000 });
+    return { ok: true, output: result };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+// ── Git Diff ─────────────────────────────────────────────────────
+
+ipcMain.handle('git-diff', (_e, projectPath, file, staged) => {
+  const run = (cmd) => {
+    try { return execSync(cmd, { cwd: projectPath, encoding: 'utf-8', timeout: 15000 }).trim(); }
+    catch { return ''; }
+  };
+  try {
+    const flag = staged ? '--cached' : '';
+    const target = file ? `-- "${file}"` : '';
+    const diff = run(`git diff ${flag} ${target}`.trim());
+    return { ok: true, diff };
+  } catch (e) {
+    return { ok: false, error: e.message, diff: '' };
+  }
+});
+
+// ── Git Stash ────────────────────────────────────────────────────
+
+ipcMain.handle('git-stash', (_e, projectPath, action, message) => {
+  const run = (cmd) => {
+    try { return execSync(cmd, { cwd: projectPath, encoding: 'utf-8', timeout: 15000 }).trim(); }
+    catch (e) { throw e; }
+  };
+  try {
+    switch (action) {
+      case 'push': {
+        const msg = message ? `git stash push -m "${message.replace(/"/g, '\\"')}"` : 'git stash push';
+        const result = run(msg);
+        return { ok: true, output: result };
+      }
+      case 'pop': {
+        const result = run('git stash pop');
+        return { ok: true, output: result };
+      }
+      case 'list': {
+        const raw = run('git stash list');
+        const stashes = raw ? raw.split('\n').filter(Boolean) : [];
+        return { ok: true, stashes };
+      }
+      case 'drop': {
+        const result = run('git stash drop');
+        return { ok: true, output: result };
+      }
+      default:
+        return { ok: false, error: `Unknown stash action: ${action}` };
+    }
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+// ── Git Discard Changes ──────────────────────────────────────────
+
+ipcMain.handle('git-discard', (_e, projectPath, files) => {
+  try {
+    const fileList = Array.isArray(files) ? files : [files];
+    for (const f of fileList) {
+      execSync(`git checkout -- "${f}"`, { cwd: projectPath, encoding: 'utf-8', timeout: 10000 });
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.stderr || e.message };
+  }
+});
+
+// ── Git Enhanced Status (staged + unstaged separated) ────────────
+
+ipcMain.handle('get-git-status-detailed', (_e, projectPath) => {
+  const run = (cmd) => {
+    try { return execSync(cmd, { cwd: projectPath, encoding: 'utf-8', timeout: 10000 }).trim(); }
+    catch { return ''; }
+  };
+  try {
+    const branch = run('git rev-parse --abbrev-ref HEAD');
+    if (!branch) return { error: 'Not a git repo', staged: [], unstaged: [], untracked: [] };
+
+    const statusRaw = run('git status --porcelain');
+    const staged = [], unstaged = [], untracked = [];
+
+    if (statusRaw) {
+      for (const line of statusRaw.split('\n').filter(Boolean)) {
+        const x = line[0]; // index status
+        const y = line[1]; // working tree status
+        const file = line.substring(3);
+
+        if (x === '?' && y === '?') {
+          untracked.push({ file, status: 'untracked' });
+        } else {
+          if (x !== ' ' && x !== '?') {
+            const statusMap = { M: 'modified', A: 'added', D: 'deleted', R: 'renamed', C: 'copied' };
+            staged.push({ file, status: statusMap[x] || x });
+          }
+          if (y !== ' ' && y !== '?') {
+            const statusMap = { M: 'modified', D: 'deleted' };
+            unstaged.push({ file, status: statusMap[y] || y });
+          }
+        }
+      }
+    }
+
+    return { branch, staged, unstaged, untracked };
+  } catch (e) {
+    return { error: e.message, staged: [], unstaged: [], untracked: [] };
   }
 });
 
@@ -1995,6 +2454,281 @@ ipcMain.handle('get-project-ports', (_e, projectPath) => {
   } catch { /* ignore */ }
 
   return result;
+});
+
+// ── IPC: Context Sync (Compact JSON + AI tool outputs) ──────────
+
+function generateCompactContext(project, allTeams, registry) {
+  const assignedTeamIds = project.teams || [];
+  const agents = assignedTeamIds
+    .map(tid => allTeams.find(t => t.id === tid))
+    .filter(Boolean)
+    .map(agent => {
+      const skills = (agent.members || []).map(s => {
+        const name = typeof s === 'string' ? s : s?.name || s?.id || '';
+        return name.includes('/') ? name.split('/').pop() : name;
+      });
+      return {
+        name: agent.name,
+        role: agent.description || 'General Assistant',
+        skills,
+      };
+    });
+
+  const stack = (project.analysis?.stack || []).map(s => s.name);
+  const services = (project.analysis?.services || []).map(s => s.name);
+  const scripts = project.analysis?.scripts || {};
+
+  const activeSkills = (project.skills || []).map(sid => {
+    const skill = (registry.skills || []).find(s => s.id === sid);
+    return skill ? (skill.name || sid) : sid;
+  });
+
+  return {
+    project: project.name,
+    path: project.path,
+    stack,
+    services,
+    env: project.activeEnv || 'DEV',
+    agents,
+    activeSkills,
+    scripts,
+    updated: new Date().toISOString(),
+  };
+}
+
+function contextToMarkdown(ctx) {
+  let md = `# Project: ${ctx.project}\n`;
+  if (ctx.stack.length) md += `Stack: ${ctx.stack.join(', ')}\n`;
+  if (ctx.services.length) md += `Services: ${ctx.services.join(', ')}\n`;
+  md += `Env: ${ctx.env}\n`;
+
+  if (ctx.agents.length) {
+    md += `\n## Team\n`;
+    for (const a of ctx.agents) {
+      md += `- ${a.name} (${a.role})`;
+      if (a.skills.length) md += ` — skills: ${a.skills.join(', ')}`;
+      md += `\n`;
+    }
+  }
+
+  if (ctx.activeSkills.length) {
+    md += `\n## Active Skills\n`;
+    for (const s of ctx.activeSkills) md += `- ${s}\n`;
+  }
+
+  const scriptEntries = Object.entries(ctx.scripts);
+  if (scriptEntries.length) {
+    md += `\n## Scripts\n`;
+    for (const [name, cmd] of scriptEntries.slice(0, 10)) {
+      md += `- ${name}: \`${cmd}\`\n`;
+    }
+  }
+
+  return md;
+}
+
+ipcMain.handle('generate-context-sync', async (_e, projectPath) => {
+  const row = dbGet('SELECT * FROM projects WHERE path = ?', [projectPath]);
+  if (!row) return null;
+  const project = projectRowToObj(row);
+  const allTeams = loadTeams();
+  const registry = (() => { try { return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8')); } catch { return { skills: [] }; } })();
+
+  const ctx = generateCompactContext(project, allTeams, registry);
+  const markdown = contextToMarkdown(ctx);
+
+  // Write context.json
+  const skillboxDir = path.join(projectPath, '.skillbox');
+  if (!fs.existsSync(skillboxDir)) fs.mkdirSync(skillboxDir, { recursive: true });
+  fs.writeFileSync(path.join(skillboxDir, 'context.json'), JSON.stringify(ctx, null, 2), 'utf8');
+
+  // Write AI tool files based on settings
+  const settings = { ...DEFAULT_SETTINGS, ...readUserSettings() };
+  const aiTools = settings['context.aiTools'] || ['claude'];
+
+  const writtenFiles = [];
+  for (const tool of aiTools) {
+    const fileName = AI_TOOL_FILES[tool];
+    if (!fileName) continue;
+    const filePath = path.join(projectPath, fileName);
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, markdown, 'utf8');
+    writtenFiles.push(fileName);
+  }
+
+  addHistory('context_synced', `Synced context: ${writtenFiles.join(', ')}`, projectPath);
+
+  return { context: ctx, markdown, writtenFiles, updated: ctx.updated };
+});
+
+ipcMain.handle('get-context-preview', async (_e, projectPath) => {
+  const row = dbGet('SELECT * FROM projects WHERE path = ?', [projectPath]);
+  if (!row) return null;
+  const project = projectRowToObj(row);
+  const allTeams = loadTeams();
+  const registry = (() => { try { return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8')); } catch { return { skills: [] }; } })();
+
+  const ctx = generateCompactContext(project, allTeams, registry);
+  const markdown = contextToMarkdown(ctx);
+
+  // Check which files exist
+  const settings = { ...DEFAULT_SETTINGS, ...readUserSettings() };
+  const aiTools = settings['context.aiTools'] || ['claude'];
+  const fileStatus = {};
+  for (const tool of aiTools) {
+    const fileName = AI_TOOL_FILES[tool];
+    if (!fileName) continue;
+    const filePath = path.join(projectPath, fileName);
+    fileStatus[fileName] = {
+      exists: fs.existsSync(filePath),
+      lastModified: null,
+    };
+    if (fileStatus[fileName].exists) {
+      try { fileStatus[fileName].lastModified = fs.statSync(filePath).mtime.toISOString(); } catch {}
+    }
+  }
+
+  // Rough token count (~4 chars per token for English)
+  const tokenEstimate = Math.ceil(markdown.length / 4);
+
+  return { context: ctx, markdown, fileStatus, tokenEstimate };
+});
+
+// ── IPC: Storage Stats & Cleanup ───────────────────────────────
+
+ipcMain.handle('get-storage-stats', async () => {
+  const dbPath = path.join(getDataDir(), 'skillbox.db');
+  let dbSize = 0;
+  try { dbSize = fs.statSync(dbPath).size; } catch {}
+
+  const projects = loadProjects();
+  const projectStats = [];
+
+  for (const project of projects) {
+    const skillboxDir = path.join(project.path, '.skillbox');
+    let contextSize = 0;
+    let cacheSize = 0;
+    const files = [];
+    let lastSync = null;
+    const projectExists = fs.existsSync(project.path);
+
+    if (fs.existsSync(skillboxDir)) {
+      try {
+        const entries = fs.readdirSync(skillboxDir);
+        for (const entry of entries) {
+          const fp = path.join(skillboxDir, entry);
+          try {
+            const stat = fs.statSync(fp);
+            if (stat.isFile()) {
+              contextSize += stat.size;
+              files.push(entry);
+              if (!lastSync || stat.mtime > new Date(lastSync)) {
+                lastSync = stat.mtime.toISOString();
+              }
+            } else if (stat.isDirectory() && entry === 'cache') {
+              cacheSize += getDirSize(fp);
+            } else if (stat.isDirectory() && entry === 'project') {
+              cacheSize += getDirSize(fp);
+            }
+          } catch {}
+        }
+      } catch {}
+    }
+
+    // Check for AI tool files in project root
+    for (const [, fileName] of Object.entries(AI_TOOL_FILES)) {
+      const fp = path.join(project.path, fileName);
+      try {
+        if (fs.existsSync(fp)) {
+          const stat = fs.statSync(fp);
+          contextSize += stat.size;
+          files.push(fileName);
+          if (!lastSync || stat.mtime > new Date(lastSync)) {
+            lastSync = stat.mtime.toISOString();
+          }
+        }
+      } catch {}
+    }
+
+    projectStats.push({
+      projectPath: project.path,
+      projectName: project.name,
+      projectExists,
+      contextSize,
+      cacheSize,
+      totalSize: contextSize + cacheSize,
+      files,
+      lastSync,
+    });
+  }
+
+  const totalContext = projectStats.reduce((s, p) => s + p.contextSize, 0);
+  const totalCache = projectStats.reduce((s, p) => s + p.cacheSize, 0);
+
+  return { dbSize, dbPath, projectStats, totalContext, totalCache };
+});
+
+function getDirSize(dirPath) {
+  let size = 0;
+  try {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fp = path.join(dirPath, entry.name);
+      if (entry.isFile()) {
+        try { size += fs.statSync(fp).size; } catch {}
+      } else if (entry.isDirectory()) {
+        size += getDirSize(fp);
+      }
+    }
+  } catch {}
+  return size;
+}
+
+ipcMain.handle('clean-project-context', async (_e, projectPath) => {
+  // Remove .skillbox dir
+  const skillboxDir = path.join(projectPath, '.skillbox');
+  if (fs.existsSync(skillboxDir)) {
+    fs.rmSync(skillboxDir, { recursive: true, force: true });
+  }
+  // Remove AI tool files
+  for (const [, fileName] of Object.entries(AI_TOOL_FILES)) {
+    const fp = path.join(projectPath, fileName);
+    try { if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch {}
+  }
+  addHistory('context_cleaned', `Cleaned context files`, projectPath);
+  return { success: true };
+});
+
+ipcMain.handle('clean-project-cache', async (_e, projectPath) => {
+  const cacheDir = path.join(projectPath, '.skillbox', 'cache');
+  if (fs.existsSync(cacheDir)) fs.rmSync(cacheDir, { recursive: true, force: true });
+  const contextDir = path.join(projectPath, '.skillbox', 'project');
+  if (fs.existsSync(contextDir)) fs.rmSync(contextDir, { recursive: true, force: true });
+  return { success: true };
+});
+
+ipcMain.handle('clean-all-stale-cache', async (_e, maxAgeDays) => {
+  const s1 = { ...DEFAULT_SETTINGS, ...readUserSettings() };
+  const maxAge = (maxAgeDays || s1['context.maxCacheAgeDays'] || 30) * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const projects = loadProjects();
+  let cleaned = 0;
+
+  for (const project of projects) {
+    const skillboxDir = path.join(project.path, '.skillbox');
+    if (!fs.existsSync(skillboxDir)) continue;
+    try {
+      const stat = fs.statSync(skillboxDir);
+      if (now - stat.mtime.getTime() > maxAge) {
+        fs.rmSync(skillboxDir, { recursive: true, force: true });
+        cleaned++;
+      }
+    } catch {}
+  }
+
+  return { cleaned };
 });
 
 // ── Test Detection ───────────────────────────────────────────────
@@ -2043,14 +2777,225 @@ ipcMain.handle('detect-tests', (_e, projectPath) => {
   // Rust
   if (exists('Cargo.toml')) result.frameworks.push('cargo test');
 
-  // Count test files
+  // Count test files (cross-platform, no shell commands)
   try {
-    const count = execSync(
-      'find . -maxdepth 5 \\( -name "*.test.*" -o -name "*.spec.*" -o -name "test_*.py" -o -name "*_test.go" -o -name "*_test.rb" \\) -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" | wc -l',
-      { cwd: projectPath, encoding: 'utf-8', timeout: 10000 }
-    ).trim();
-    result.testFileCount = parseInt(count, 10) || 0;
+    const testPatterns = [/\.test\./, /\.spec\./, /^test_.*\.py$/, /.*_test\.go$/, /.*_test\.rb$/];
+    const skipDirs = new Set(['node_modules', '.git', 'vendor', 'dist', 'build']);
+    let testCount = 0;
+    const walk = (dir, depth) => {
+      if (depth > 5) return;
+      let entries;
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+      for (const e of entries) {
+        if (e.isDirectory()) {
+          if (!skipDirs.has(e.name)) walk(path.join(dir, e.name), depth + 1);
+        } else if (testPatterns.some(p => p.test(e.name))) {
+          testCount++;
+        }
+      }
+    };
+    walk(projectPath, 0);
+    result.testFileCount = testCount;
   } catch { /* ignore */ }
 
   return result;
+});
+
+// ── IPC: MCP (Model Context Protocol) ─────────────────────────────
+
+// Helper: get git status (reused by MCP server)
+function getGitStatusDetailedFn(projectPath) {
+  const run = (cmd) => {
+    try { return execSync(cmd, { cwd: projectPath, encoding: 'utf-8', timeout: 10000 }).trim(); }
+    catch { return ''; }
+  };
+  try {
+    const branch = run('git rev-parse --abbrev-ref HEAD');
+    if (!branch) return { error: 'Not a git repo', staged: [], unstaged: [], untracked: [] };
+    const statusRaw = run('git status --porcelain');
+    const staged = [], unstaged = [], untracked = [];
+    if (statusRaw) {
+      for (const line of statusRaw.split('\n').filter(Boolean)) {
+        const x = line[0], y = line[1], file = line.substring(3);
+        if (x === '?' && y === '?') {
+          untracked.push({ file, status: 'untracked' });
+        } else {
+          if (x !== ' ' && x !== '?') {
+            const map = { M: 'modified', A: 'added', D: 'deleted', R: 'renamed', C: 'copied' };
+            staged.push({ file, status: map[x] || x });
+          }
+          if (y !== ' ' && y !== '?') {
+            const map = { M: 'modified', D: 'deleted' };
+            unstaged.push({ file, status: map[y] || y });
+          }
+        }
+      }
+    }
+    return { branch, staged, unstaged, untracked };
+  } catch (e) {
+    return { error: e.message, staged: [], unstaged: [], untracked: [] };
+  }
+}
+
+// MCP Server handlers
+ipcMain.handle('mcp-server-start', async (_e, opts = {}) => {
+  try {
+    const settings = { ...DEFAULT_SETTINGS, ...readUserSettings() };
+    const port = opts.port || settings['mcp.serverPort'] || 0;
+    const token = opts.token || settings['mcp.serverToken'] || null;
+
+    const result = await mcpServer.startServer({
+      port,
+      token: token || null,
+      dbHelpers: { dbAll, dbGet, dbRun },
+      gitHelpers: { getGitStatusDetailed: getGitStatusDetailedFn },
+      projectHelpers: {},
+      onApproval: (req) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('mcp-approval-request', req);
+        }
+      },
+      onStatus: (status) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('mcp-server-status', status);
+        }
+      },
+      onToolInvoked: (info) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('mcp-tool-invoked', info);
+        }
+      },
+    });
+    addHistory('mcp', `MCP server started on port ${result.port}`);
+    return result;
+  } catch (e) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('mcp-server-stop', async () => {
+  try {
+    await mcpServer.stopServer();
+    addHistory('mcp', 'MCP server stopped');
+    return { success: true };
+  } catch (e) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('mcp-server-status', () => {
+  return mcpServer.getStatus();
+});
+
+ipcMain.handle('mcp-resolve-approval', (_e, id, approved) => {
+  return mcpServer.resolveApproval(id, approved);
+});
+
+ipcMain.handle('mcp-get-pending-approvals', () => {
+  return mcpServer.getPendingApprovals();
+});
+
+// MCP Client handlers
+ipcMain.handle('mcp-client-connect-http', async (_e, config) => {
+  try {
+    const result = await mcpClient.connectHttp(config);
+    addHistory('mcp', `Connected to MCP server: ${config.name} (${config.url})`);
+    return result;
+  } catch (e) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('mcp-client-connect-stdio', async (_e, config) => {
+  try {
+    const result = await mcpClient.connectStdio(config);
+    addHistory('mcp', `Connected to MCP server: ${config.name} via ${config.command}`);
+    return result;
+  } catch (e) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('mcp-client-disconnect', async (_e, id) => {
+  try {
+    await mcpClient.disconnect(id);
+    addHistory('mcp', `Disconnected from MCP server: ${id}`);
+    return { success: true };
+  } catch (e) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('mcp-client-call-tool', async (_e, connectionId, toolName, args) => {
+  try {
+    return await mcpClient.callTool(connectionId, toolName, args);
+  } catch (e) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('mcp-client-refresh-tools', async (_e, connectionId) => {
+  try {
+    return await mcpClient.refreshTools(connectionId);
+  } catch (e) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('mcp-client-list', () => {
+  return mcpClient.listConnections();
+});
+
+ipcMain.handle('mcp-client-all-tools', () => {
+  return mcpClient.getAllTools();
+});
+
+// Notify renderer on client connection changes
+mcpClient.setOnConnectionChange(() => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('mcp-connections-changed', mcpClient.listConnections());
+  }
+});
+
+// Auto-start MCP server if enabled in settings
+app.whenReady().then(async () => {
+  try {
+    const settings = { ...DEFAULT_SETTINGS, ...readUserSettings() };
+    if (settings['mcp.serverEnabled']) {
+      const port = settings['mcp.serverPort'] || 0;
+      const token = settings['mcp.serverToken'] || null;
+      await mcpServer.startServer({
+        port,
+        token: token || null,
+        dbHelpers: { dbAll, dbGet, dbRun },
+        gitHelpers: { getGitStatusDetailed: getGitStatusDetailedFn },
+        projectHelpers: {},
+        onApproval: (req) => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('mcp-approval-request', req);
+          }
+        },
+        onStatus: (status) => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('mcp-server-status', status);
+          }
+        },
+        onToolInvoked: (info) => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('mcp-tool-invoked', info);
+          }
+        },
+      });
+    }
+  } catch (e) {
+    console.error('MCP auto-start failed:', e.message);
+  }
+});
+
+// Clean up MCP on quit
+app.on('before-quit', async () => {
+  try {
+    await mcpServer.stopServer();
+    await mcpClient.disconnectAll();
+  } catch { /* ignore */ }
 });

@@ -3,9 +3,16 @@ import {
   Settings,
   Palette,
   Terminal,
-  Code,
-  Eye,
   RotateCcw,
+  Bot,
+  Database,
+  Trash2,
+  FolderOpen,
+  HardDrive,
+  RefreshCw,
+  Network,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -24,6 +31,7 @@ import {
 import { useStore } from '@/hooks/useStore';
 import { useToast } from '@/hooks/useToast';
 import { electronAPI } from '@/lib/electronAPI';
+import { applyTheme } from '@/lib/utils';
 
 const ACCENT_COLORS = [
   { value: 'blue', label: 'Blue', swatch: 'bg-blue-500' },
@@ -55,6 +63,34 @@ const FONT_FAMILIES = [
   { value: "'Source Code Pro', monospace", label: 'Source Code Pro' },
   { value: 'monospace', label: 'System Monospace' },
 ];
+
+const AI_TOOLS = [
+  { id: 'claude', label: 'Claude Code', file: 'CLAUDE.md' },
+  { id: 'cursor', label: 'Cursor', file: '.cursorrules' },
+  { id: 'copilot', label: 'GitHub Copilot', file: '.github/copilot-instructions.md' },
+  { id: 'windsurf', label: 'Windsurf', file: '.windsurfrules' },
+  { id: 'generic', label: 'Generic', file: 'AGENTS.md' },
+];
+
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function timeAgo(isoString) {
+  if (!isoString) return 'Never';
+  const diff = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 const DEFAULT_SETTINGS = {
   'workbench.mode': 'dark',
@@ -98,6 +134,7 @@ function SettingsRow({ label, description, children }) {
 }
 
 export function SettingsView() {
+  const { settings: globalSettings, setSettings: globalSetSettings } = useStore();
   const { toast } = useToast();
   const [settings, setSettings] = useState(null);
   const [dirty, setDirty] = useState(false);
@@ -123,18 +160,16 @@ export function SettingsView() {
   const handleSave = useCallback(async () => {
     if (!settings) return;
     try {
-      const result = await electronAPI.saveSettings(settings);
+      await electronAPI.saveSettings(settings);
       toast('Settings saved', 'success');
       setDirty(false);
-      // Apply theme attributes to document
-      const root = document.documentElement;
-      root.setAttribute('data-mode', settings['workbench.mode'] || 'dark');
-      root.setAttribute('data-gray', settings['workbench.gray'] || 'slate');
-      root.setAttribute('data-accent', settings['workbench.accent'] || 'blue');
+      applyTheme(settings);
+      // Sync to global store so other components pick up changes
+      globalSetSettings(settings);
     } catch (e) {
       toast('Failed to save settings: ' + e.message, 'error');
     }
-  }, [settings, toast]);
+  }, [settings, toast, globalSetSettings]);
 
   const handleReset = useCallback(async () => {
     try {
@@ -143,14 +178,12 @@ export function SettingsView() {
       setSettings(defaults);
       setDirty(false);
       toast('Settings reset to defaults', 'success');
-      const root = document.documentElement;
-      root.setAttribute('data-mode', defaults['workbench.mode'] || 'dark');
-      root.setAttribute('data-gray', defaults['workbench.gray'] || 'slate');
-      root.setAttribute('data-accent', defaults['workbench.accent'] || 'blue');
+      applyTheme(defaults);
+      globalSetSettings(defaults);
     } catch (e) {
       toast('Failed to reset settings: ' + e.message, 'error');
     }
-  }, [toast]);
+  }, [toast, globalSetSettings]);
 
   if (!settings) {
     return (
@@ -205,7 +238,7 @@ export function SettingsView() {
             <Separator />
 
             <SettingsRow label="Accent Color" description="Primary accent color for the UI">
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {ACCENT_COLORS.map((c) => (
                   <button
                     key={c.value}
@@ -218,6 +251,33 @@ export function SettingsView() {
                     onClick={() => update('workbench.accent', c.value)}
                   />
                 ))}
+                {/* Custom color picker */}
+                <div className="relative inline-flex items-center justify-center w-6 h-6 shrink-0">
+                  <button
+                    title="Custom color"
+                    className={`w-6 h-6 rounded-full ring-offset-background transition-all overflow-hidden ${
+                      settings['workbench.accent']?.startsWith('#')
+                        ? 'ring-2 ring-ring ring-offset-2'
+                        : 'ring-1 ring-border hover:ring-ring hover:ring-offset-1'
+                    }`}
+                    style={{
+                      background: settings['workbench.accent']?.startsWith('#')
+                        ? settings['workbench.accent']
+                        : 'conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
+                    }}
+                    onClick={() => document.getElementById('accent-color-input')?.click()}
+                  />
+                  <input
+                    id="accent-color-input"
+                    type="color"
+                    className="absolute inset-0 w-6 h-6 opacity-0 cursor-pointer"
+                    value={settings['workbench.accent']?.startsWith('#') ? settings['workbench.accent'] : '#3b82f6'}
+                    onChange={(e) => update('workbench.accent', e.target.value)}
+                  />
+                </div>
+                {settings['workbench.accent']?.startsWith('#') && (
+                  <span className="text-[11px] text-muted-foreground font-mono leading-6">{settings['workbench.accent']}</span>
+                )}
               </div>
             </SettingsRow>
 
@@ -243,86 +303,35 @@ export function SettingsView() {
 
             <Separator />
 
-            <SettingsRow label="Font Size" description="Base font size for the editor">
+            <SettingsRow label="UI Font Size" description="Base font size for the entire platform (px)">
               <Input
                 type="number"
                 min={10}
                 max={24}
                 className="w-[80px]"
-                value={settings['editor.fontSize'] ?? 13}
+                value={settings['ui.fontSize'] ?? 13}
                 onChange={(e) =>
-                  update('editor.fontSize', parseInt(e.target.value, 10) || 13)
+                  update('ui.fontSize', parseInt(e.target.value, 10) || 13)
                 }
               />
             </SettingsRow>
 
             <Separator />
 
-            <SettingsRow label="Font Family" description="Monospace font for editor and terminal">
+            <SettingsRow label="UI Font Family" description="Primary font for the entire platform">
               <Select
-                value={settings['editor.fontFamily'] || "'SF Mono', monospace"}
-                onValueChange={(v) => update('editor.fontFamily', v)}
+                value={settings['ui.fontFamily'] || 'Inter'}
+                onValueChange={(v) => update('ui.fontFamily', v)}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {FONT_FAMILIES.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>
-                      {f.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="Inter">Inter</SelectItem>
+                  <SelectItem value="system-ui">System UI</SelectItem>
+                  <SelectItem value="SF Pro">SF Pro</SelectItem>
                 </SelectContent>
               </Select>
-            </SettingsRow>
-          </SettingsSection>
-
-          {/* Editor */}
-          <SettingsSection icon={Code} title="Editor">
-            <SettingsRow label="Tab Size" description="Number of spaces per tab">
-              <Select
-                value={String(settings['editor.tabSize'] ?? 2)}
-                onValueChange={(v) => update('editor.tabSize', parseInt(v, 10))}
-              >
-                <SelectTrigger className="w-[80px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2">2</SelectItem>
-                  <SelectItem value="4">4</SelectItem>
-                </SelectContent>
-              </Select>
-            </SettingsRow>
-
-            <Separator />
-
-            <SettingsRow label="Word Wrap" description="Wrap long lines in the editor">
-              <Switch
-                checked={settings['editor.wordWrap'] === 'on'}
-                onCheckedChange={(v) =>
-                  update('editor.wordWrap', v ? 'on' : 'off')
-                }
-              />
-            </SettingsRow>
-
-            <Separator />
-
-            <SettingsRow label="Minimap" description="Show code minimap on the right side">
-              <Switch
-                checked={settings['editor.minimap'] !== false}
-                onCheckedChange={(v) => update('editor.minimap', v)}
-              />
-            </SettingsRow>
-
-            <Separator />
-
-            <SettingsRow label="Line Numbers" description="Show line numbers in the gutter">
-              <Switch
-                checked={settings['editor.lineNumbers'] !== 'off'}
-                onCheckedChange={(v) =>
-                  update('editor.lineNumbers', v ? 'on' : 'off')
-                }
-              />
             </SettingsRow>
           </SettingsSection>
 
@@ -375,32 +384,258 @@ export function SettingsView() {
             </SettingsRow>
           </SettingsSection>
 
-          {/* General */}
-          <SettingsSection icon={Eye} title="General">
-            <SettingsRow
-              label="Auto Save"
-              description="Automatically save files after a delay"
-            >
-              <Switch
-                checked={settings['general.autoSave'] !== false}
-                onCheckedChange={(v) => update('general.autoSave', v)}
-              />
-            </SettingsRow>
+          {/* AI Context Sync */}
+          <SettingsSection icon={Bot} title="AI Context Sync">
+            <div className="space-y-1.5">
+              <Label className="text-sm">AI Tools</Label>
+              <p className="text-xs text-muted-foreground">
+                Select which tools you use. Skillbox generates the context file for each one.
+              </p>
+              <div className="space-y-2 pt-1">
+                {AI_TOOLS.map((tool) => {
+                  const aiTools = settings['context.aiTools'] || ['claude'];
+                  const checked = aiTools.includes(tool.id);
+                  return (
+                    <div key={tool.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            const current = settings['context.aiTools'] || ['claude'];
+                            const next = v
+                              ? [...current, tool.id]
+                              : current.filter((t) => t !== tool.id);
+                            update('context.aiTools', next.length > 0 ? next : ['generic']);
+                          }}
+                        />
+                        <span className="text-sm">{tool.label}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground font-mono">{tool.file}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
             <Separator />
 
             <SettingsRow
-              label="Telemetry"
-              description="Send anonymous usage data to improve Skillbox"
+              label="Auto-sync"
+              description="Update context files when agents, skills, or stack change"
             >
               <Switch
-                checked={settings['general.telemetry'] !== false}
-                onCheckedChange={(v) => update('general.telemetry', v)}
+                checked={settings['context.autoSync'] !== false}
+                onCheckedChange={(v) => update('context.autoSync', v)}
               />
             </SettingsRow>
           </SettingsSection>
+
+          {/* MCP Quick Status */}
+          <McpQuickStatus />
+
+          {/* Storage & Cache */}
+          <StorageSection />
         </div>
       </ScrollArea>
     </div>
+  );
+}
+
+function StorageSection() {
+  const { toast } = useToast();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const loadStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const s = await electronAPI.getStorageStats();
+      setStats(s);
+    } catch {
+      setStats(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadStats(); }, [loadStats]);
+
+  const handleCleanProject = async (projectPath) => {
+    try {
+      await electronAPI.cleanProjectContext(projectPath);
+      toast('Context cleaned', 'success');
+      loadStats();
+    } catch {
+      toast('Failed to clean', 'error');
+    }
+  };
+
+  const handleCleanCache = async (projectPath) => {
+    try {
+      await electronAPI.cleanProjectCache(projectPath);
+      toast('Cache cleaned', 'success');
+      loadStats();
+    } catch {
+      toast('Failed to clean cache', 'error');
+    }
+  };
+
+  const handleCleanStale = async () => {
+    try {
+      const maxAge = settings?.['context.maxCacheAgeDays'] || 30;
+      const result = await electronAPI.cleanAllStaleCache(maxAge);
+      toast(`Cleaned ${result.cleaned} stale project(s)`, 'success');
+      loadStats();
+    } catch {
+      toast('Failed to clean stale cache', 'error');
+    }
+  };
+
+  return (
+    <SettingsSection icon={HardDrive} title="Storage & Cache">
+      {loading && !stats ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+          Loading storage info...
+        </div>
+      ) : stats ? (
+        <div className="space-y-4">
+          {/* Database */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Database className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm">Database</p>
+                <p className="text-xs text-muted-foreground font-mono truncate max-w-[300px]">
+                  {stats.dbPath}
+                </p>
+              </div>
+            </div>
+            <span className="text-sm font-medium">{formatBytes(stats.dbSize)}</span>
+          </div>
+
+          <Separator />
+
+          {/* Generated Context per project */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium">Generated Context</p>
+              <span className="text-xs text-muted-foreground">
+                Total: {formatBytes(stats.totalContext + stats.totalCache)}
+              </span>
+            </div>
+            <div className="space-y-1.5 max-h-[240px] overflow-y-auto">
+              {stats.projectStats.map((p) => (
+                <div
+                  key={p.projectPath}
+                  className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm"
+                >
+                  <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">{p.projectName}</p>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span>{formatBytes(p.totalSize)}</span>
+                      {p.files.length > 0 && (
+                        <span className="truncate">{p.files.join(' · ')}</span>
+                      )}
+                      {p.lastSync && <span>Synced {timeAgo(p.lastSync)}</span>}
+                    </div>
+                    {!p.projectExists && (
+                      <span className="text-[10px] text-amber-400">Project folder not found</span>
+                    )}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      title="Clean cache"
+                      onClick={() => handleCleanCache(p.projectPath)}
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-destructive hover:text-destructive"
+                      title="Clean all context"
+                      onClick={() => handleCleanProject(p.projectPath)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {stats.projectStats.length === 0 && (
+                <p className="text-xs text-muted-foreground py-2 text-center">No projects</p>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Bulk actions */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleCleanStale}>
+              <Trash2 className="h-3 w-3 mr-1.5" />
+              Clean Stale (&gt; 30 days)
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={loadStats}>
+              <RefreshCw className="h-3 w-3 mr-1.5" />
+              Refresh
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Failed to load storage info</p>
+      )}
+    </SettingsSection>
+  );
+}
+
+function McpQuickStatus() {
+  const { mcpServerStatus, mcpConnections, setActiveView } = useStore();
+  const { toast } = useToast();
+
+  const serverUrl = mcpServerStatus.port ? `http://127.0.0.1:${mcpServerStatus.port}/mcp` : null;
+
+  const handleCopyUrl = () => {
+    if (serverUrl) {
+      navigator.clipboard.writeText(serverUrl);
+      toast('MCP URL copied to clipboard', 'success');
+    }
+  };
+
+  return (
+    <SettingsSection icon={Network} title="MCP Integration">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm">
+            Server: {mcpServerStatus.running ? (
+              <span className="text-emerald-400 font-medium">Active on port {mcpServerStatus.port}</span>
+            ) : (
+              <span className="text-muted-foreground">Stopped</span>
+            )}
+          </p>
+          {mcpConnections.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {mcpConnections.length} external connection{mcpConnections.length !== 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {serverUrl && (
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleCopyUrl}>
+              <Copy className="h-3 w-3 mr-1.5" />
+              Copy URL
+            </Button>
+          )}
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setActiveView('mcp')}>
+            <ExternalLink className="h-3 w-3 mr-1.5" />
+            Open MCP Panel
+          </Button>
+        </div>
+      </div>
+    </SettingsSection>
   );
 }

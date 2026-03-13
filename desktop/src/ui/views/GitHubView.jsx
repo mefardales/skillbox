@@ -134,15 +134,13 @@ export default function GitHubView() {
           <h2 className="text-sm font-semibold text-foreground">GitHub</h2>
         </div>
         {status.connected && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={refreshStatus}
-            className="h-7 px-2 text-xs"
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] font-bold uppercase tracking-wider transition-colors"
           >
-            <RefreshCw className="w-3 h-3 mr-1" />
-            Refresh
-          </Button>
+            <RefreshCw className="h-2.5 w-2.5" />
+            Sync
+          </button>
         )}
       </div>
 

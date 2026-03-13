@@ -63,6 +63,44 @@
   --warning: #f5a623;
 }
 
+/* ── Accent Colors ── */
+[data-accent='blue']   { --primary: #3b82f6; --ring: #3b82f6; }
+[data-accent='indigo'] { --primary: #6366f1; --ring: #6366f1; }
+[data-accent='cyan']   { --primary: #06b6d4; --ring: #06b6d4; }
+[data-accent='teal']   { --primary: #14b8a6; --ring: #14b8a6; }
+[data-accent='green']  { --primary: #22c55e; --ring: #22c55e; }
+[data-accent='orange'] { --primary: #f97316; --ring: #f97316; }
+[data-accent='red']    { --primary: #ef4444; --ring: #ef4444; }
+[data-accent='pink']   { --primary: #ec4899; --ring: #ec4899; }
+[data-accent='purple'] { --primary: #a855f7; --ring: #a855f7; }
+[data-accent='yellow'] { --primary: #eab308; --ring: #eab308; }
+[data-accent='mint']   { --primary: #34d399; --ring: #34d399; }
+
+/* Light mode accent overrides (slightly darker for contrast) */
+.light[data-accent='blue']   { --primary: #2563eb; --ring: #2563eb; }
+.light[data-accent='indigo'] { --primary: #4f46e5; --ring: #4f46e5; }
+.light[data-accent='cyan']   { --primary: #0891b2; --ring: #0891b2; }
+.light[data-accent='teal']   { --primary: #0d9488; --ring: #0d9488; }
+.light[data-accent='green']  { --primary: #16a34a; --ring: #16a34a; }
+.light[data-accent='orange'] { --primary: #ea580c; --ring: #ea580c; }
+.light[data-accent='red']    { --primary: #dc2626; --ring: #dc2626; }
+.light[data-accent='pink']   { --primary: #db2777; --ring: #db2777; }
+.light[data-accent='purple'] { --primary: #9333ea; --ring: #9333ea; }
+.light[data-accent='yellow'] { --primary: #ca8a04; --ring: #ca8a04; }
+.light[data-accent='mint']   { --primary: #10b981; --ring: #10b981; }
+
+/* ── Gray Scales ── */
+/* Slate = default (defined in :root and .light) */
+[data-gray='mauve']  { --border: #2e2930; --muted: #2e2930; --secondary: #2e2930; --input: #2e2930; --muted-foreground: #a09dab; --sidebar: #131115; --sidebar-border: #2e2930; --sidebar-accent: #2e2930; }
+[data-gray='sage']   { --border: #252a27; --muted: #252a27; --secondary: #252a27; --input: #252a27; --muted-foreground: #9ba39e; --sidebar: #0f1210; --sidebar-border: #252a27; --sidebar-accent: #252a27; }
+[data-gray='olive']  { --border: #282a25; --muted: #282a25; --secondary: #282a25; --input: #282a25; --muted-foreground: #9ea29b; --sidebar: #111210; --sidebar-border: #282a25; --sidebar-accent: #282a25; }
+[data-gray='sand']   { --border: #2c2a27; --muted: #2c2a27; --secondary: #2c2a27; --input: #2c2a27; --muted-foreground: #a2a09b; --sidebar: #131210; --sidebar-border: #2c2a27; --sidebar-accent: #2c2a27; }
+
+.light[data-gray='mauve']  { --border: #e1dde4; --muted: #f2eff4; --secondary: #f2eff4; --input: #e1dde4; --muted-foreground: #6e6a78; --sidebar: #f8f6fa; --sidebar-border: #e1dde4; --sidebar-accent: #f2eff4; }
+.light[data-gray='sage']   { --border: #dddfe0; --muted: #eff1f0; --secondary: #eff1f0; --input: #dddfe0; --muted-foreground: #6a7269; --sidebar: #f6f8f7; --sidebar-border: #dddfe0; --sidebar-accent: #eff1f0; }
+.light[data-gray='olive']  { --border: #dfe0dc; --muted: #f0f1ee; --secondary: #f0f1ee; --input: #dfe0dc; --muted-foreground: #6d716a; --sidebar: #f7f8f6; --sidebar-border: #dfe0dc; --sidebar-accent: #f0f1ee; }
+.light[data-gray='sand']   { --border: #e2e0dc; --muted: #f3f1ee; --secondary: #f3f1ee; --input: #e2e0dc; --muted-foreground: #706f6a; --sidebar: #f9f8f6; --sidebar-border: #e2e0dc; --sidebar-accent: #f3f1ee; }
+
 /* ── Base layer ── */
 @layer base {
   * {
@@ -120,6 +158,11 @@ body.platform-darwin.fullscreen .app-shell {
   padding-top: 0;
 }
 
+/* ── Windows fullscreen: hide custom titlebar ── */
+body.platform-win32.fullscreen .titlebar-custom {
+  display: none;
+}
+
 /* ── Resizable panel handles ── */
 .resize-handle {
   position: relative;
@@ -127,7 +170,7 @@ body.platform-darwin.fullscreen .app-shell {
 }
 
 .resize-handle-vertical {
-  width: 4px;
+  width: 6px;
   cursor: col-resize;
   background: transparent;
   transition: background 0.15s;
@@ -139,7 +182,7 @@ body.platform-darwin.fullscreen .app-shell {
 }
 
 .resize-handle-horizontal {
-  height: 4px;
+  height: 6px;
   cursor: row-resize;
   background: transparent;
   transition: background 0.15s;
@@ -148,6 +191,33 @@ body.platform-darwin.fullscreen .app-shell {
 .resize-handle-horizontal:hover,
 .resize-handle-horizontal.active {
   background: var(--primary);
+}
+
+/* ── xterm.js full-fit fix ── */
+.xterm {
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box;
+}
+
+.xterm-viewport {
+  width: 100% !important;
+  overflow-y: auto !important;
+}
+
+.xterm-screen {
+  width: 100% !important;
+}
+
+.xterm-rows {
+  padding: 2px 0 0 4px;
+}
+
+.xterm-helper-textarea {
+  position: absolute !important;
+  opacity: 0 !important;
 }
 
 /* ── Selection ── */

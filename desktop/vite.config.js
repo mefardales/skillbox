@@ -9,6 +9,15 @@ export default defineConfig({
   build: {
     outDir: '../../dist-ui',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 3500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          xterm: ['@xterm/xterm', '@xterm/addon-fit', '@xterm/addon-web-links'],
+          monaco: ['monaco-editor'],
+        },
+      },
+    },
   },
   resolve: {
     alias: {
